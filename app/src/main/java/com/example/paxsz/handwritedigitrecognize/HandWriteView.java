@@ -43,6 +43,12 @@ public class HandWriteView extends View{
         mPaint.setDither(true);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
+
+        if (mBitmap == null) {
+            mBitmap = Bitmap.createBitmap(720, 720, Bitmap.Config.ARGB_8888);
+            Canvas backGroundCanvas = new Canvas(mBitmap);
+            backGroundCanvas.drawARGB(255,0,0,0);
+        }
     }
     @Override
     public void draw(Canvas canvas) {
@@ -77,14 +83,15 @@ public class HandWriteView extends View{
     }
 
     private void updateDrawHandWrite(){
-        int width = getWidth();
-        int height = getHeight();
+//        int width = getWidth();
+//        int height = getHeight();
 
-        if (mBitmap == null) {
-            mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        }
+//        if (mBitmap == null) {
+//            mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+//        }
 
         Canvas tmpCanvas = new Canvas(mBitmap);
+
         tmpCanvas.drawLine(mLastX, mLastY, mCurrX, mCurrY, mPaint);
         invalidate();
     }

@@ -21,11 +21,19 @@
         android:layout_height="360dp" />
 
     <Button
-        android:id="@+id/btnRecognize"
+        android:id="@+id/btnInitModel"
         android:layout_below="@id/handWriteView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft = "true"
+        android:text="Init" />
+
+    <Button
+        android:id="@+id/btnRecognize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/handWriteView"
+        android:layout_centerHorizontal="true"
         android:text="Recognize" />
     <Button
         android:id="@+id/btnClear"
