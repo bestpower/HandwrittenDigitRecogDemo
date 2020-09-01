@@ -1,10 +1,11 @@
 //
-// Created by wangyu on 2019/10/23.
+// Created by wangyu on 2020/8/31.
 //
 
-#pragma once
-#ifndef MY_OCC_DEMO_QUALITYDETECT_H
-#define MY_OCC_DEMO_QUALITYDETECT_H
+#ifndef HANDWRITTENDIGITRECOGDEMO_IMGFORMATCONVERTER_H
+#define HANDWRITTENDIGITRECOGDEMO_IMGFORMATCONVERTER_H
+
+
 //c
 #include <string>
 #include <algorithm>
@@ -24,19 +25,13 @@
 #include "opencv2/core/core_c.h"
 
 
-namespace FaceIr {
+namespace HwDr {
     bool BitmapToMatrix(JNIEnv * env, jobject obj_bitmap, cv::Mat & matrix);
     bool MatrixToBitmap(JNIEnv * env, cv::Mat & matrix, jobject obj_bitmap);
-    double ImgAver(IplImage *img);
-    double ImgVarc(IplImage *img);
-    double* getLight(IplImage *image);
-
-    double ssim(cv::Mat &i1, cv::Mat &i2);
-    double nrss(cv::Mat &image);
-    //运动模糊
-    double blurDetect(cv::Mat srcImage);
-    //对焦模糊
-    double tenengradDetect(cv::Mat srcImage);
+    cv::Mat bytesToMat(unsigned char *bytesData, int w, int h, int c);
+    unsigned char* MatToBytes(cv::Mat mat);
+    bool rgbToBin(JNIEnv * env, jobject obj_bitmap, cv::Mat target_mat, jint binThreshold);
 }
 
-#endif //MY_OCC_DEMO_QUALITYDETECT_H
+
+#endif //HANDWRITTENDIGITRECOGDEMO_IMGFORMATCONVERTER_H

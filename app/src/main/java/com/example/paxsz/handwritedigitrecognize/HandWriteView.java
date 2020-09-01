@@ -37,7 +37,8 @@ public class HandWriteView extends View{
     }
     private void init(){
         mPaint = new Paint();
-        mPaint.setColor(Color.WHITE);
+//        mPaint.setColor(Color.WHITE);
+        mPaint.setARGB(255,255,255,255);
         mPaint.setStrokeWidth(70);
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);

@@ -12,25 +12,33 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-#ifndef NCNN_BENCHMARK_H
-#define NCNN_BENCHMARK_H
+#ifndef NCNN_BLOB_H
+#define NCNN_BLOB_H
 
-#include "platform.h"
 #include "mat.h"
-#include "layer.h"
+#include "platform.h"
 
 namespace ncnn {
 
-// get now timestamp in ms
-double get_current_time();
+class Blob
+{
+public:
+    // empty
+    Blob();
 
-#if NCNN_BENCHMARK
-
-void benchmark(const Layer* layer, double start, double end);
-void benchmark(const Layer* layer, const Mat& bottom_blob, Mat& top_blob, double start, double end);
-
-#endif // NCNN_BENCHMARK
+public:
+#if NCNN_STRING
+    // blob name
+    std::string name;
+#endif // NCNN_STRING
+    // layer index which produce this blob as output
+    int producer;
+    // layer index which need this blob as input
+    std::vector<int> consumers;
+    // shape hint
+    Mat shape;
+};
 
 } // namespace ncnn
 
-#endif // NCNN_BENCHMARK_H
+#endif // NCNN_BLOB_H

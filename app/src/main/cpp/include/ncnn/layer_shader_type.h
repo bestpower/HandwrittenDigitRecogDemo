@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making ncnn available.
 //
-// Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
+// Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
 //
 // Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -12,19 +12,18 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-#ifndef NCNN_LAYER_TYPE_H
-#define NCNN_LAYER_TYPE_H
+#ifndef NCNN_LAYER_SHADER_TYPE_H
+#define NCNN_LAYER_SHADER_TYPE_H
 
 namespace ncnn {
 
-namespace LayerType {
-enum LayerType
+namespace LayerShaderType {
+enum LayerShaderType
 {
-#include "layer_type_enum.h"
-    CustomBit = (1<<8),
+#include "layer_shader_type_enum.h"
 };
-} // namespace LayerType
+} // namespace LayerShaderType
 
 } // namespace ncnn
 
-#endif // NCNN_LAYER_TYPE_H
+#endif // NCNN_LAYER_SHADER_TYPE_H

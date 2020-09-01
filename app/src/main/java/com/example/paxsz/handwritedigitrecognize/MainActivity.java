@@ -3,6 +3,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 
 import com.example.paxsz.handwritedigitrecognize.HandWriteView;
 
+import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -119,15 +121,22 @@ public class MainActivity extends Activity {
             mHwDr = null;
         }
     }
-
+    int input_num = 0;
     private void buttonRecognizeOnClick(View v){
         long timeRecognizeAll = System.currentTimeMillis();
         Bitmap tmpBitmap = mHandWriteView.returnBitmap();
         Log.i(TAG, "HandWriteView_W_H = " + tmpBitmap.getWidth() + " " + tmpBitmap.getHeight());
         if(null == tmpBitmap)
             return;
+//        try {
+//            saveFile(tmpBitmap, String.valueOf(input_num) + ".jpg", "/sdcard/test_hwd_imgs/");
+//            input_num++;
+//        }catch (IOException ioe){
+//            ioe.getStackTrace();
+//        }
         //todo 预处理
         byte[] tmpBytes = getPixelsRGBA(tmpBitmap);
+//        Bitmap ResizedBitmap = scaleBitmap(tmpBitmap, 28, 28, 0, false);
 
 //        Mat tmpMat = new Mat(tmpBitmap.getHeight(),tmpBitmap.getWidth(),CvType.CV_8UC3);
 //        Mat saveMat = new Mat(tmpBitmap.getHeight(),tmpBitmap.getWidth(),CvType.CV_8UC1);
@@ -158,13 +167,15 @@ public class MainActivity extends Activity {
 //
         long timeSvmPredict = System.currentTimeMillis();
         //todo 推理
-//        int response = (int)mClassifier.predict(predict_mat);
         float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());
+//        float[] response = mHwDr.HwDigitRecogFromBitmap(tmpBitmap, tmpBitmap.getWidth(), tmpBitmap.getHeight());
+
+        int prindict_num = getMaxIndex(response);
 
         timeSvmPredict = System.currentTimeMillis() - timeSvmPredict;
         Log.i(TAG, "调用SVM模型时间：" + timeSvmPredict);
 
-        mResultView.setText(mResultView.getText()+Arrays.toString(response));
+        mResultView.setText(mResultView.getText()+Arrays.toString(response) + "\n结果为：" + String.valueOf(prindict_num));
         //Toast.makeText(getApplicationContext(),"The predict label is "+String.valueOf(response),Toast.LENGTH_SHORT).show();
         timeRecognizeAll = System.currentTimeMillis() - timeRecognizeAll;
         Log.i(TAG, "总识别处理时间：" + timeRecognizeAll);
@@ -182,6 +193,53 @@ public class MainActivity extends Activity {
         image.copyPixelsToBuffer(buffer); // Move the byte data to the buffer
         byte[] byteTemp = buffer.array(); // Get the underlying array containing the
         return byteTemp;
+    }
+    //调整位图尺寸角度
+    public Bitmap scaleBitmap(Bitmap origin, int newWidth, int newHeight, int newRotate, boolean fillter) {
+        if (origin == null) {
+            return null;
+        }
+        int height = origin.getHeight();
+        int width = origin.getWidth();
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);// 使用后乘
+        if (newRotate != 0) {
+//            matrix.setRotate(newRotate);//旋转角度
+            matrix.setRotate(newRotate, width/2f, height/2f);
+        }
+        Bitmap newBM = Bitmap.createBitmap(origin, 0, 0, width, height, matrix, fillter);
+        return newBM;
+    }
+    //保存位图
+    public static void saveFile(Bitmap bm, String fileName, String path) throws IOException {
+        File foder = new File(path);
+        if (!foder.exists()) {
+            foder.mkdir();
+        }
+        File myCaptureFile = new File(path, fileName);
+        if (!myCaptureFile.exists()) {
+            myCaptureFile.createNewFile();
+        }
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(myCaptureFile));
+        bm.compress(Bitmap.CompressFormat.JPEG, 100, bos);
+        bos.flush();
+        bos.close();
+    }
+    /**
+     * 获取数组最值
+     */
+    private int getMaxIndex(float arr[]) {
+        float max = arr[0];
+        int maxIndex = 0;
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i] > max) {
+                max = arr[i];
+                maxIndex = i;
+            }
+        }
+        return maxIndex;
     }
 
     //存储权限检查

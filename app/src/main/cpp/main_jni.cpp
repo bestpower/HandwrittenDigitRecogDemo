@@ -8,11 +8,11 @@
 #include <math.h>
 
 // ncnn
-#include "net.h"
-#include "benchmark.h"
+#include "ncnn/net.h"
+#include "ncnn/benchmark.h"
+//
 #include "DigitRecog.h"
-#include "QualityDetect.h"
-#include "RemoveBackgroud.h"
+#include "ImgFormatConverter.h"
 //opencv
 #include "opencv2/core/core.hpp"
 #include "opencv2/opencv.hpp"
@@ -145,15 +145,20 @@ extern "C" {
 	//获取数字手写识别概率数据
 	JNIEXPORT jfloatArray JNICALL
 	Java_paxsz_ai_HwDr_HwDigitRecog(JNIEnv *env, jobject instance, jbyteArray digitImgData_, jint w, jint h) {
-
+        //字节数组预处理
 		jbyte *digitImgData = env->GetByteArrayElements(digitImgData_, NULL);
 		unsigned char *digitImgCharData = (unsigned char *) digitImgData;
 		//转换图片数据格式
-		ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(digitImgCharData, ncnn::Mat::PIXEL_RGBA2GRAY, w, h, 28, 28);
+		cv::Mat digitImgMat = bytesToMat(digitImgCharData, w, h, 4);
+		//灰度化
+		cv::Mat grayMat;
+        cv::cvtColor(digitImgMat, grayMat, cv::COLOR_BGRA2GRAY);
+        //二值化
+        cv::Mat binMat;
+        threshold(grayMat, binMat, 128, 255, cv::THRESH_BINARY);
+        //cv:;Mat->ncnn::Mat
+		ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(binMat.data, ncnn::Mat::PIXEL_GRAY, w, h, 28, 28);
 		//输入数据归一化
-	//    const float normalize[3] = {1/255.f, 1/255.f, 1/255.f};
-	//    ncnn_img.substract_mean_normalize(NULL, normalize);
-
 		const float mean_vals[1] = {0.5f*255.f};
 		const float norm_vals[1] = {1/0.5f/255.f};
 		ncnn_img.substract_mean_normalize(mean_vals, norm_vals);
@@ -174,5 +179,50 @@ extern "C" {
 		//返回预测结果概率数组
 		return featureArray;
 	}
+
+    JNIEXPORT jfloatArray JNICALL
+    Java_paxsz_ai_HwDr_HwDigitRecogFromBitmap(JNIEnv *env, jobject instance, jobject digitImgBitmap, jint w, jint h) {
+
+//		cv::Mat binMat;
+//		rgbToBin(env, digitImgBitmap, binMat, 128);
+        cv::Mat matBitmap;
+        bool ret = BitmapToMatrix(env, digitImgBitmap, matBitmap);
+        if(!ret){
+            return NULL;
+        }
+        cv::Mat imageGray;
+        cv::cvtColor(matBitmap, imageGray, cv::COLOR_BGRA2GRAY);
+        cv::Mat imageBin;
+        threshold(imageGray, imageBin, 128, 255, cv::THRESH_BINARY);
+        //转换图片数据格式
+//        ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(binMat.data, ncnn::Mat::PIXEL_GRAY, w, h, 28, 28);
+        ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(imageBin.data, ncnn::Mat::PIXEL_GRAY, w, h, 28, 28);
+        //输入数据归一化
+    //	    const float normalize[1] = {1/255.f};
+    //	    ncnn_img.substract_mean_normalize(NULL, normalize);
+
+        const float mean_vals[1] = {0.5f*255.f};
+        const float norm_vals[1] = {1/0.5f/255.f};
+        ncnn_img.substract_mean_normalize(mean_vals, norm_vals);
+
+        std::vector<float> feature;
+        //数字手写识别推理
+        mDigitRecog->start(ncnn_img, feature);
+
+        //提取并赋值概率数组
+        float *featureInfo = new float[10];
+        for(int i = 0;i<10;i++){
+            featureInfo[i] = feature[i];
+        }
+        jfloatArray featureArray = env->NewFloatArray(10);
+        env->SetFloatArrayRegion(featureArray,0,10,featureInfo);
+		//释放资源
+		env->DeleteLocalRef(digitImgBitmap);
+        matBitmap.release();
+        imageGray.release();
+        imageBin.release();
+        //返回预测结果概率数组
+        return featureArray;
+    }
 
 }

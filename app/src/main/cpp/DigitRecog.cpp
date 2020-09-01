@@ -9,8 +9,8 @@ namespace HwDr {
 
     //载入模型数据
     DigitRecog::DigitRecog(const std::string &model_path) {
-        std::string param_files = model_path + "LeNet_p20-sim.param";
-        std::string bin_files = model_path + "LeNet_p20-sim.bin";
+        std::string param_files = model_path + "LeNet_p18-sim.param";
+        std::string bin_files = model_path + "LeNet_p18-sim.bin";
         DigitRecognet.load_param(param_files.data());
         DigitRecognet.load_model(bin_files.data());
     }

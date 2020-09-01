@@ -7,7 +7,7 @@
 
 
 #include <string>
-#include "net.h"
+#include "ncnn/net.h"
 #include <algorithm>
 
 namespace HwDr {

@@ -1,6 +1,8 @@
 package paxsz.ai;
 
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
+
 import com.demo.pax.face.CpuUtils;
 
 public class HwDr {
@@ -17,6 +19,7 @@ public class HwDr {
     public native boolean MnistModelUnInit();
     //模型推理
     public native float[] HwDigitRecog(byte[] digitImgData, int w, int h);//字节数组输入
+    public native float[] HwDigitRecogFromBitmap(Bitmap digitImgBitmap, int w, int h);//位图输入
 
     private boolean init;
     private int availableThreadsNum = 0;

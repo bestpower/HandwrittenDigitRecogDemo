@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making ncnn available.
 //
-// Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
+// Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 //
 // Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -12,18 +12,25 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-#ifndef NCNN_LAYER_SHADER_TYPE_H
-#define NCNN_LAYER_SHADER_TYPE_H
+#ifndef NCNN_BENCHMARK_H
+#define NCNN_BENCHMARK_H
+
+#include "layer.h"
+#include "mat.h"
+#include "platform.h"
 
 namespace ncnn {
 
-namespace LayerShaderType {
-enum LayerShaderType
-{
-#include "layer_shader_type_enum.h"
-};
-} // namespace LayerType
+// get now timestamp in ms
+double get_current_time();
+
+#if NCNN_BENCHMARK
+
+void benchmark(const Layer* layer, double start, double end);
+void benchmark(const Layer* layer, const Mat& bottom_blob, Mat& top_blob, double start, double end);
+
+#endif // NCNN_BENCHMARK
 
 } // namespace ncnn
 
-#endif // NCNN_LAYER_SHADER_TYPE_H
+#endif // NCNN_BENCHMARK_H

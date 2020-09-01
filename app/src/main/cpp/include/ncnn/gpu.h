@@ -19,8 +19,9 @@
 
 #if NCNN_VULKAN
 
-#include <vulkan/vulkan.h>
 #include "mat.h"
+
+#include <vulkan/vulkan.h>
 
 namespace ncnn {
 
@@ -119,7 +120,9 @@ public:
     bool unified_compute_transfer_queue;
 
     // bug is not feature
-    bool bug_local_size_spec_const;
+    bool bug_storage_buffer_no_l1;
+    bool bug_layout_binding_id_alias;
+    bool bug_corrupted_online_pipeline_cache;
 
     // but sometimes bug is a feature
     bool bug_implicit_fp16_arithmetic;
@@ -149,6 +152,7 @@ public:
     int support_VK_KHR_shader_float_controls;
     int support_VK_KHR_storage_buffer_storage_class;
     int support_VK_KHR_swapchain;
+    int support_VK_EXT_memory_budget;
     int support_VK_EXT_queue_family_foreign;
 #if __ANDROID_API__ >= 26
     int support_VK_ANDROID_external_memory_android_hardware_buffer;
@@ -162,6 +166,7 @@ class VkCompute;
 class Layer;
 class Packing_vulkan;
 class Option;
+class PipelineCache;
 class VulkanDevice
 {
 public:
@@ -170,17 +175,26 @@ public:
 
     const GpuInfo& info;
 
-    VkDevice vkdevice() const { return device; }
+    VkDevice vkdevice() const
+    {
+        return device;
+    }
 
-    VkShaderModule get_shader_module(int shader_type_index) const;
-
+#if !NCNN_VULKAN_ONLINE_SPIRV
     // with fixed workgroup size
     VkShaderModule create_shader_module(int shader_type_index, uint32_t local_size_x, uint32_t local_size_y, uint32_t local_size_z) const;
+#endif
 
     VkShaderModule compile_shader_module(const uint32_t* spv_data, size_t spv_data_size) const;
 
     // with fixed workgroup size
     VkShaderModule compile_shader_module(const uint32_t* spv_data, size_t spv_data_size, uint32_t local_size_x, uint32_t local_size_y, uint32_t local_size_z) const;
+
+    // helper for creating pipeline
+    int create_descriptorset_layout(int binding_count, const int* binding_types, VkDescriptorSetLayout* descriptorset_layout) const;
+    int create_pipeline_layout(int push_constant_count, VkDescriptorSetLayout descriptorset_layout, VkPipelineLayout* pipeline_layout) const;
+    int create_pipeline(VkShaderModule shader_module, VkPipelineLayout pipeline_layout, const std::vector<vk_specialization_type>& specializations, VkPipeline* pipeline) const;
+    int create_descriptor_update_template(int binding_count, const int* binding_types, VkDescriptorSetLayout descriptorset_layout, VkPipelineLayout pipeline_layout, VkDescriptorUpdateTemplateKHR* descriptor_update_template) const;
 
     uint32_t find_memory_index(uint32_t memory_type_bits, VkFlags required, VkFlags preferred, VkFlags preferred_not) const;
     bool is_mappable(uint32_t memory_type_index) const;
@@ -203,8 +217,14 @@ public:
     VkMat get_dummy_buffer() const;
     VkImageMat get_dummy_image() const;
 
+    // pipeline cache on this device
+    const PipelineCache* get_pipeline_cache() const;
+
     // test image allocation
     bool shape_support_image_storage(const Mat& shape) const;
+
+    // current gpu heap memory budget in MB
+    uint32_t get_heap_budget() const;
 
     // utility operator
     void convert_packing(const VkMat& src, VkMat& dst, int dst_elempack, VkCompute& cmd, const Option& opt) const;
@@ -251,10 +271,6 @@ public:
 #endif // __ANDROID_API__ >= 26
 
 protected:
-    // shader management
-    int create_shader_module();
-    void destroy_shader_module();
-
     // device extension
     int init_device_extension();
 
@@ -263,12 +279,11 @@ protected:
     void destroy_dummy_buffer_image();
 
     // utility operator
-    int create_utility_operator();
+    const ncnn::Packing_vulkan* get_utility_operator(int storage_type_from, int storage_type_to, int cast_type_from_index, int cast_type_to_index, int packing_type_to_index) const;
     void destroy_utility_operator();
 
 private:
     VkDevice device;
-    std::vector<VkShaderModule> shader_modules;
 
     // hardware queue
     mutable std::vector<VkQueue> compute_queues;
@@ -292,16 +307,25 @@ private:
     VkMat dummy_buffer;
     VkImageMat dummy_image;
 
+    // device-wide pipeline cache
+    PipelineCache* pipeline_cache;
+
     // utility operator
     // from buffer | image
     // to buffer | image
     // from fp32-b/i | fp16p-b/i | fp16s-b/i
     // to fp32-b/i | fp16p-b/i | fp16s-b/i
     // to pack1 | pack4 | pack8
-    ncnn::Packing_vulkan* uop_packing[2][2][3][3][3];
+    mutable ncnn::Packing_vulkan* uop_packing[2][2][3][3][3];
+    mutable Mutex uop_lock;
 };
 
 VulkanDevice* get_gpu_device(int device_index = get_default_gpu_index());
+
+#if NCNN_VULKAN_ONLINE_SPIRV
+// online spirv compilation
+int compile_spirv_module(int shader_type_index, const Option& opt, std::vector<uint32_t>& spirv);
+#endif
 
 // info from spirv
 class ShaderInfo
@@ -315,10 +339,12 @@ public:
     // 1 = storage buffer
     // 2 = storage image
     // 3 = combined image sampler
-    int binding_types[16];// 16 is large enough I think ...
+    int binding_types[16]; // 16 is large enough I think ...
 };
 
+#if !NCNN_VULKAN_ONLINE_SPIRV
 const ShaderInfo& get_shader_info(int shader_type_index);
+#endif
 int resolve_shader_info(const uint32_t* spv_data, size_t spv_data_size, ShaderInfo& shader_info);
 
 } // namespace ncnn

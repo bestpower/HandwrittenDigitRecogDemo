@@ -12,33 +12,19 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-#ifndef NCNN_BLOB_H
-#define NCNN_BLOB_H
-
-#include "platform.h"
-#include "mat.h"
+#ifndef NCNN_LAYER_TYPE_H
+#define NCNN_LAYER_TYPE_H
 
 namespace ncnn {
 
-class Blob
+namespace LayerType {
+enum LayerType
 {
-public:
-    // empty
-    Blob();
-
-public:
-#if NCNN_STRING
-    // blob name
-    std::string name;
-#endif // NCNN_STRING
-    // layer index which produce this blob as output
-    int producer;
-    // layer index which need this blob as input
-    std::vector<int> consumers;
-    // shape hint
-    Mat shape;
+#include "layer_type_enum.h"
+    CustomBit = (1 << 8),
 };
+} // namespace LayerType
 
 } // namespace ncnn
 
-#endif // NCNN_BLOB_H
+#endif // NCNN_LAYER_TYPE_H
