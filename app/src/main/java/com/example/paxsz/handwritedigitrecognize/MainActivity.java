@@ -30,18 +30,18 @@ import paxsz.ai.HwDr;
 
 public class MainActivity extends Activity {
     private static final String TAG = "Hand_writing";
+    //权限检查
     private final static int REQUEST_EXTERNAL_STORAGE = 0x222;
     private static String[] PERMISSIONS_STORAGE = {
             "android.permission.READ_EXTERNAL_STORAGE",
             "android.permission.WRITE_EXTERNAL_STORAGE" };
+    //手写区域视图
     HandWriteView mHandWriteView;
-//    CvSVM mClassifier;
-//    File mSvmModel;
+    //结果显示视图
     TextView mResultView;
-
+    //JNI方法调用类
     HwDr mHwDr;
 
-//    static{ System.loadLibrary("opencv_java"); }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +57,7 @@ public class MainActivity extends Activity {
         mInitBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //初始化模型
                 initModels();
             }
         });
@@ -65,6 +66,7 @@ public class MainActivity extends Activity {
         mRecognizeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //手写识别
                 buttonRecognizeOnClick(view);
             }
         });
@@ -73,36 +75,11 @@ public class MainActivity extends Activity {
         mClearDrawBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //清空画布
                 buttonClearDrawOnClick(view);
             }
         });
 
-//        mClassifier = new CvSVM();
-
-        //
-//        try {
-//            // load cascade file from application resources
-//            InputStream is = getResources().openRawResource(R.raw.mnist);
-//            File mnist_modelDir = getDir("mnist_model", Context.MODE_PRIVATE);
-//            mSvmModel = new File(mnist_modelDir, "mnist.xml");
-//            FileOutputStream os = new FileOutputStream(mSvmModel);
-//
-//            byte[] buffer = new byte[4096];
-//            int bytesRead;
-//            while ((bytesRead = is.read(buffer)) != -1) {
-//                os.write(buffer, 0, bytesRead);
-//            }
-//            is.close();
-//            os.close();
-//
-////            mClassifier.load(mSvmModel.getAbsolutePath());
-//
-//            mnist_modelDir.delete();
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
-//        }
     }
 
     //初始化模型
@@ -138,33 +115,6 @@ public class MainActivity extends Activity {
         byte[] tmpBytes = getPixelsRGBA(tmpBitmap);
 //        Bitmap ResizedBitmap = scaleBitmap(tmpBitmap, 28, 28, 0, false);
 
-//        Mat tmpMat = new Mat(tmpBitmap.getHeight(),tmpBitmap.getWidth(),CvType.CV_8UC3);
-//        Mat saveMat = new Mat(tmpBitmap.getHeight(),tmpBitmap.getWidth(),CvType.CV_8UC1);
-//
-//        Utils.bitmapToMat(tmpBitmap,tmpMat);
-//
-//        Imgproc.cvtColor(tmpMat, saveMat, Imgproc.COLOR_RGBA2GRAY);
-
-//        final String galleryPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString();
-//        String picturePath = galleryPath+"/handwrite.bmp";
-//        if(!Highgui.imwrite(picturePath,saveMat)){
-//            Toast.makeText(getApplicationContext(),"Failed to save the picture",Toast.LENGTH_SHORT).show();
-//        }
-//        else
-//        {
-//            Toast.makeText(getApplicationContext(),"Succeed to save the picture",Toast.LENGTH_SHORT).show();
-//        }
-        //
-//        int imgVectorLen = 28 * 28;
-//        Mat dstMat = new Mat(28,28,CvType.CV_8UC1);
-//        Mat tempFloat = new Mat(28,28,CvType.CV_32FC1);
-//
-//        Imgproc.resize(saveMat, dstMat, new Size(28,28));
-//        dstMat.convertTo(tempFloat, CvType.CV_32FC1);
-//
-//        Mat predict_mat = tempFloat.reshape(0,1).clone();
-//        Core.normalize(predict_mat,predict_mat,0.0,1.0,Core.NORM_MINMAX);
-//
         long timeSvmPredict = System.currentTimeMillis();
         //todo 推理
         float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());

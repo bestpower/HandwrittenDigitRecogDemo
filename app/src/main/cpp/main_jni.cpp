@@ -44,15 +44,15 @@ extern "C" {
 
 	JNIEXPORT jboolean JNICALL
 	Java_paxsz_ai_HwDr_MnistModelInit(JNIEnv *env, jobject instance, jstring MnistModelPath_) {
-		 LOGD("JNI开始人脸检测模型初始化");
+		 LOGD("JNI开始手写数字识别模型初始化");
 		//如果已初始化则直接返回
 		if (detection_sdk_init_ok) {
-			//  LOGD("人脸检测模型已经导入");
+			LOGD("手写数字识别模型已经导入");
 			return true;
 		}
 		jboolean tRet = false;
 		if (NULL == MnistModelPath_) {
-			//   LOGD("导入的人脸检测的目录为空");
+		    LOGD("导入的模型目录的目录为空");
 			return tRet;
 		}
 
@@ -94,7 +94,7 @@ extern "C" {
 	JNIEXPORT jboolean JNICALL
 	Java_paxsz_ai_HwDr_MnistModelUnInit(JNIEnv *env, jobject instance) {
 		if(!detection_sdk_init_ok){
-			LOGD("人脸检测MTCNN模型已经释放过或者未初始化");
+			LOGD("手写数字识别模型已经释放过或者未初始化");
 			return true;
 		}
 		jboolean tDetectionUnInit = false;
@@ -103,7 +103,7 @@ extern "C" {
 
 		detection_sdk_init_ok=false;
 		tDetectionUnInit = true;
-		LOGD("人脸检测初始化锁，重新置零");
+		LOGD("模型初始化锁，重新置零");
 		return tDetectionUnInit;
 
 	}
@@ -113,7 +113,7 @@ extern "C" {
 	JNIEXPORT jboolean JNICALL
 	Java_paxsz_ai_HwDr_SetThreadsNumber(JNIEnv *env, jobject instance, jint threadsNumber) {
 		if(!detection_sdk_init_ok){
-			LOGD("人脸检测MTCNN模型SDK未初始化，直接返回");
+			LOGD("手写数字识别模型SDK未初始化，直接返回");
 			return false;
 		}
 
@@ -132,7 +132,7 @@ extern "C" {
 //	Java_paxsz_ai_HwDr_SetTimeCount(JNIEnv *env, jobject instance, jint timeCount) {
 //
 //		if(!detection_sdk_init_ok){
-//			LOGD("人脸检测MTCNN模型SDK未初始化，直接返回");
+//			LOGD("手写数字识别模型SDK未初始化，直接返回");
 //			return false;
 //		}
 //

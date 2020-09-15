@@ -36,6 +36,7 @@ public class HandWriteView extends View{
         init();
     }
     private void init(){
+        //设置画笔属性
         mPaint = new Paint();
 //        mPaint.setColor(Color.WHITE);
         mPaint.setARGB(255,255,255,255);
