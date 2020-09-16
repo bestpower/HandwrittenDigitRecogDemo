@@ -13,13 +13,10 @@ import android.view.View;
 
 public class HandWriteView extends View{
 
-    public Bitmap returnBitmap(){
-        return mBitmap;
-    }
     private Paint mPaint;
     private float degrees=0;
     private int mLastX, mLastY, mCurrX, mCurrY;
-    private Bitmap mBitmap;
+    private Bitmap mBitmap = null;
 
     public HandWriteView(Context context) {
         super(context);
@@ -64,6 +61,13 @@ public class HandWriteView extends View{
         canvas.drawBitmap(mBitmap, 0, 0, mPaint);
     }
 
+    public void drawBitmap(Canvas canvas, Bitmap bitmap) {
+        super.draw(canvas);
+        mBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        canvas.drawBitmap(mBitmap, 0, 0, null);
+        invalidate();
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
@@ -96,6 +100,10 @@ public class HandWriteView extends View{
 
         tmpCanvas.drawLine(mLastX, mLastY, mCurrX, mCurrY, mPaint);
         invalidate();
+    }
+
+    public Bitmap returnBitmap(){
+        return mBitmap;
     }
 
     public void clearDraw(){

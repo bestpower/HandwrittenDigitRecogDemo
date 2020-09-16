@@ -1,6 +1,7 @@
 #include <android/bitmap.h>
 #include <android/log.h>
 #include <jni.h>
+#include <android/asset_manager_jni.h>
 #include <string>
 #include <vector>
 #include <cstring>
@@ -32,8 +33,6 @@ using namespace HwDr;
 #define TAG "HwDrSo"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,TAG,__VA_ARGS__)
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__))
-//#define ASSERT(status, ret)     if (!(status)) { return ret; }
-//#define ASSERT_FALSE(status)    ASSERT(status, false)
 
 static DigitRecog *mDigitRecog;
 
@@ -48,9 +47,9 @@ extern "C" {
 		//如果已初始化则直接返回
 		if (detection_sdk_init_ok) {
 			LOGD("手写数字识别模型已经导入");
-			return true;
+			return jboolean(true);
 		}
-		jboolean tRet = false;
+		jboolean tRet = jboolean(false);
 		if (NULL == MnistModelPath_) {
 		    LOGD("导入的模型目录的目录为空");
 			return tRet;
@@ -86,23 +85,39 @@ extern "C" {
 
 		env->ReleaseStringUTFChars(MnistModelPath_, MnistModelPath);
 		detection_sdk_init_ok = true;
-		tRet = true;
+		tRet = jboolean(true);
 		return tRet;
 	}
+
+    JNIEXPORT jboolean JNICALL
+    Java_paxsz_ai_HwDr_MnistAssetModelInit(JNIEnv *env, jobject instance, jobject assetManager) {
+        LOGD("JNI开始手写数字识别模型加密方式初始化");
+        //如果已初始化则直接返回
+        if (detection_sdk_init_ok) {
+            LOGD("手写数字识别模型已经导入");
+            return jboolean(true);
+        }
+        jboolean tRet = jboolean(false);
+        AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+        mDigitRecog = new DigitRecog(mgr);
+        detection_sdk_init_ok = true;
+        tRet = jboolean(true);
+        return tRet;
+    }
 
 	//模型反初始化
 	JNIEXPORT jboolean JNICALL
 	Java_paxsz_ai_HwDr_MnistModelUnInit(JNIEnv *env, jobject instance) {
 		if(!detection_sdk_init_ok){
 			LOGD("手写数字识别模型已经释放过或者未初始化");
-			return true;
+			return jboolean(true);
 		}
-		jboolean tDetectionUnInit = false;
+		jboolean tDetectionUnInit = jboolean(false);
 
 		delete mDigitRecog;
 
 		detection_sdk_init_ok=false;
-		tDetectionUnInit = true;
+		tDetectionUnInit = jboolean(true);
 		LOGD("模型初始化锁，重新置零");
 		return tDetectionUnInit;
 
@@ -114,33 +129,18 @@ extern "C" {
 	Java_paxsz_ai_HwDr_SetThreadsNumber(JNIEnv *env, jobject instance, jint threadsNumber) {
 		if(!detection_sdk_init_ok){
 			LOGD("手写数字识别模型SDK未初始化，直接返回");
-			return false;
+			return jboolean(false);
 		}
 
 		if(threadsNumber!=1&&threadsNumber!=2&&threadsNumber!=4&&threadsNumber!=8){
 			LOGD("线程只能设置1，2，4，8");
-			return false;
+			return jboolean(false);
 		}
 
 		mDigitRecog->SetThreadNum(threadsNumber);
 
-		return  true;
+		return jboolean(true);
 	}
-
-
-//	JNIEXPORT jboolean JNICALL
-//	Java_paxsz_ai_HwDr_SetTimeCount(JNIEnv *env, jobject instance, jint timeCount) {
-//
-//		if(!detection_sdk_init_ok){
-//			LOGD("手写数字识别模型SDK未初始化，直接返回");
-//			return false;
-//		}
-//
-//		mDigitRecog->SetTimeCount(timeCount);
-//
-//		return true;
-//
-//	}
 
 	//获取数字手写识别概率数据
 	JNIEXPORT jfloatArray JNICALL
@@ -149,19 +149,10 @@ extern "C" {
 		jbyte *digitImgData = env->GetByteArrayElements(digitImgData_, NULL);
 		unsigned char *digitImgCharData = (unsigned char *) digitImgData;
 		//转换图片数据格式
-		cv::Mat digitImgMat = bytesToMat(digitImgCharData, w, h, 4);
-		//灰度化
-		cv::Mat grayMat;
-        cv::cvtColor(digitImgMat, grayMat, cv::COLOR_BGRA2GRAY);
-        //二值化
-        cv::Mat binMat;
-        threshold(grayMat, binMat, 128, 255, cv::THRESH_BINARY);
-        //cv:;Mat->ncnn::Mat
-		ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(binMat.data, ncnn::Mat::PIXEL_GRAY, w, h, 28, 28);
+		ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(digitImgCharData, ncnn::Mat::PIXEL_RGBA2GRAY, w, h, 28, 28);
 		//输入数据归一化
-		const float mean_vals[1] = {0.5f*255.f};
-		const float norm_vals[1] = {1/0.5f/255.f};
-		ncnn_img.substract_mean_normalize(mean_vals, norm_vals);
+		const float norm_vals[3] = {1/255.f, 1/255.f, 1/255.f};
+		ncnn_img.substract_mean_normalize(0, norm_vals);
 
 		std::vector<float> feature;
 		//数字手写识别推理
@@ -183,27 +174,16 @@ extern "C" {
     JNIEXPORT jfloatArray JNICALL
     Java_paxsz_ai_HwDr_HwDigitRecogFromBitmap(JNIEnv *env, jobject instance, jobject digitImgBitmap, jint w, jint h) {
 
-//		cv::Mat binMat;
-//		rgbToBin(env, digitImgBitmap, binMat, 128);
         cv::Mat matBitmap;
         bool ret = BitmapToMatrix(env, digitImgBitmap, matBitmap);
         if(!ret){
             return NULL;
         }
-        cv::Mat imageGray;
-        cv::cvtColor(matBitmap, imageGray, cv::COLOR_BGRA2GRAY);
-        cv::Mat imageBin;
-        threshold(imageGray, imageBin, 128, 255, cv::THRESH_BINARY);
         //转换图片数据格式
-//        ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(binMat.data, ncnn::Mat::PIXEL_GRAY, w, h, 28, 28);
-        ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(imageBin.data, ncnn::Mat::PIXEL_GRAY, w, h, 28, 28);
+        ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(matBitmap.data, ncnn::Mat::PIXEL_BGRA2GRAY, w, h, 28, 28);
         //输入数据归一化
-    //	    const float normalize[1] = {1/255.f};
-    //	    ncnn_img.substract_mean_normalize(NULL, normalize);
-
-        const float mean_vals[1] = {0.5f*255.f};
-        const float norm_vals[1] = {1/0.5f/255.f};
-        ncnn_img.substract_mean_normalize(mean_vals, norm_vals);
+        const float norm_vals[3] = {1/255.f, 1/255.f, 1/255.f};
+        ncnn_img.substract_mean_normalize(0, norm_vals);
 
         std::vector<float> feature;
         //数字手写识别推理
@@ -219,10 +199,38 @@ extern "C" {
 		//释放资源
 		env->DeleteLocalRef(digitImgBitmap);
         matBitmap.release();
-        imageGray.release();
-        imageBin.release();
         //返回预测结果概率数组
         return featureArray;
     }
 
+    JNIEXPORT jfloatArray JNICALL
+    Java_paxsz_ai_HwDr_HwDigitRecogFromPath(JNIEnv *env, jobject instance, jstring imgPath) {
+
+        const char *digitImgPath = env->GetStringUTFChars(imgPath, 0);
+        std::string imgPath_ = digitImgPath;
+        cv::Mat digitImageMat = cv::imread(imgPath_);
+        //转换图片数据格式
+        ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(digitImageMat.data, ncnn::Mat::PIXEL_BGR2GRAY, digitImageMat.cols, digitImageMat.rows, 28, 28);
+        //输入数据归一化
+        const float norm_vals[3] = {1/255.f, 1/255.f, 1/255.f};
+        ncnn_img.substract_mean_normalize(0, norm_vals);
+
+        std::vector<float> feature;
+        //数字手写识别推理
+        mDigitRecog->start(ncnn_img, feature);
+
+        //提取并赋值概率数组
+        float *featureInfo = new float[10];
+        for(int i = 0;i<10;i++){
+            featureInfo[i] = feature[i];
+        }
+        jfloatArray featureArray = env->NewFloatArray(10);
+        env->SetFloatArrayRegion(featureArray,0,10,featureInfo);
+        //释放资源
+        env->ReleaseStringUTFChars(imgPath, digitImgPath);
+        ncnn_img.release();
+        std::vector<float>().swap(feature);
+        //返回预测结果概率数组
+        return featureArray;
+    }
 }

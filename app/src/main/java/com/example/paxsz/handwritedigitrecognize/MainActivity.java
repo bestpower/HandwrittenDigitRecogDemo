@@ -1,9 +1,12 @@
 package com.example.paxsz.handwritedigitrecognize;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -19,12 +22,14 @@ import com.example.paxsz.handwritedigitrecognize.HandWriteView;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Locale;
 
 import paxsz.ai.HwDr;
 
@@ -35,12 +40,16 @@ public class MainActivity extends Activity {
     private static String[] PERMISSIONS_STORAGE = {
             "android.permission.READ_EXTERNAL_STORAGE",
             "android.permission.WRITE_EXTERNAL_STORAGE" };
+    private static final int FILE_SELECT_CODE = 1000;
     //手写区域视图
     HandWriteView mHandWriteView;
     //结果显示视图
     TextView mResultView;
     //JNI方法调用类
     HwDr mHwDr;
+    //图片路径方式
+    Uri selectUri;
+    Bitmap fileImgBitmap;
 
 
     @Override
@@ -48,7 +57,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        verifyStoragePermissions(this);
+//        verifyStoragePermissions(this);
 
         mHandWriteView = (HandWriteView) findViewById(R.id.handWriteView);
         mResultView = (TextView) findViewById(R.id.resultShow);
@@ -71,6 +80,15 @@ public class MainActivity extends Activity {
             }
         });
 
+        Button mSelectBtn = (Button) findViewById(R.id.btnSelect);
+        mSelectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //选择图片识别
+                chooseLocalFile();
+            }
+        });
+
         Button mClearDrawBtn = (Button) findViewById(R.id.btnClear);
         mClearDrawBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -87,7 +105,8 @@ public class MainActivity extends Activity {
         //模型初始化
         File sdDir = Environment.getExternalStorageDirectory();//获取跟目录
         String sdPath = sdDir.toString() + "/Mnist/models/";//人脸检测模型
-        if(mHwDr == null) mHwDr = new HwDr(sdPath);
+//        if(mHwDr == null) mHwDr = new HwDr(sdPath);//普通加载
+        if(mHwDr == null) mHwDr = new HwDr(getAssets());//加密加载
     }
 
     //反初始化模型
@@ -105,91 +124,62 @@ public class MainActivity extends Activity {
         Log.i(TAG, "HandWriteView_W_H = " + tmpBitmap.getWidth() + " " + tmpBitmap.getHeight());
         if(null == tmpBitmap)
             return;
-//        try {
-//            saveFile(tmpBitmap, String.valueOf(input_num) + ".jpg", "/sdcard/test_hwd_imgs/");
-//            input_num++;
-//        }catch (IOException ioe){
-//            ioe.getStackTrace();
-//        }
-        //todo 预处理
-        byte[] tmpBytes = getPixelsRGBA(tmpBitmap);
-//        Bitmap ResizedBitmap = scaleBitmap(tmpBitmap, 28, 28, 0, false);
+        //预处理
+//        byte[] tmpBytes = getPixelsRGBA(tmpBitmap);
+//        Bitmap waitRecognizeBitmap = Utils.scaleBitmap(tmpBitmap, 28, 28, 0, false);
 
-        long timeSvmPredict = System.currentTimeMillis();
-        //todo 推理
-        float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());
-//        float[] response = mHwDr.HwDigitRecogFromBitmap(tmpBitmap, tmpBitmap.getWidth(), tmpBitmap.getHeight());
+        long timeLeNetPredict = System.currentTimeMillis();
+        //推理
+//        float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());
+        float[] response = mHwDr.HwDigitRecogFromBitmap(tmpBitmap, tmpBitmap.getWidth(), tmpBitmap.getHeight());
 
-        int prindict_num = getMaxIndex(response);
-
-        timeSvmPredict = System.currentTimeMillis() - timeSvmPredict;
-        Log.i(TAG, "调用SVM模型时间：" + timeSvmPredict);
-
-        mResultView.setText(mResultView.getText()+Arrays.toString(response) + "\n结果为：" + String.valueOf(prindict_num));
+        timeLeNetPredict = System.currentTimeMillis() - timeLeNetPredict;
+        Log.i(TAG, "调用模型时间：" + timeLeNetPredict);
+        //推理结果处理
+        String[] resposeStrs = new String[response.length];
+        for(int i=0;i<response.length;i++){
+            resposeStrs[i] = String.format("%.3f", response[i]);
+        }
+        int prindict_num = Utils.getMaxIndex(response);
+        //结果显示
+        mResultView.setText(mResultView.getText()+Arrays.toString(resposeStrs) +
+                "\n结果为：" + String.valueOf(prindict_num));
         //Toast.makeText(getApplicationContext(),"The predict label is "+String.valueOf(response),Toast.LENGTH_SHORT).show();
         timeRecognizeAll = System.currentTimeMillis() - timeRecognizeAll;
         Log.i(TAG, "总识别处理时间：" + timeRecognizeAll);
     }
 
+    private void recognizeFromPath(Intent data){
+        mHandWriteView.clearDraw();
+        selectUri = data.getData();
+        try {
+            try {
+                fileImgBitmap = Utils.decodeUri(MainActivity.this, selectUri, 720, 720);
+                Canvas canvas = new Canvas(Bitmap.createBitmap(720, 720, Bitmap.Config.ARGB_8888));
+                mHandWriteView.drawBitmap(canvas, fileImgBitmap);
+                Log.d(TAG, "获取图片显示");
+                //推理
+                long timeLeNetPredict = System.currentTimeMillis();
+                float[] response = mHwDr.HwDigitRecogFromPath(Utils.getPhotoPathFromContentUri(this, selectUri));
+                String[] resposeStrs = new String[response.length];
+                for(int i=0;i<response.length;i++){
+                    resposeStrs[i] = String.format("%.3f", response[i]);
+                }
+                int prindict_num = Utils.getMaxIndex(response);
+                timeLeNetPredict = System.currentTimeMillis() - timeLeNetPredict;
+                Log.i(TAG, "调用模型时间：" + timeLeNetPredict);
+                mResultView.setText(mResultView.getText()+Arrays.toString(resposeStrs) + "\n结果为：" + String.valueOf(prindict_num));
+            }catch (FileNotFoundException e){
+                e.getStackTrace();
+            }
+        }catch (NullPointerException ne){
+            Log.e(TAG, "Can't find uri");
+        }
+    }
+
     private void buttonClearDrawOnClick(View v){
         mResultView.setText("The recognition result is: ");
         mHandWriteView.clearDraw();
-    }
-
-    //提取位图像素点
-    private byte[] getPixelsRGBA(Bitmap image) {
-        int bytes = image.getByteCount();
-        ByteBuffer buffer = ByteBuffer.allocate(bytes); // Create a new buffer
-        image.copyPixelsToBuffer(buffer); // Move the byte data to the buffer
-        byte[] byteTemp = buffer.array(); // Get the underlying array containing the
-        return byteTemp;
-    }
-    //调整位图尺寸角度
-    public Bitmap scaleBitmap(Bitmap origin, int newWidth, int newHeight, int newRotate, boolean fillter) {
-        if (origin == null) {
-            return null;
-        }
-        int height = origin.getHeight();
-        int width = origin.getWidth();
-        float scaleWidth = ((float) newWidth) / width;
-        float scaleHeight = ((float) newHeight) / height;
-        Matrix matrix = new Matrix();
-        matrix.postScale(scaleWidth, scaleHeight);// 使用后乘
-        if (newRotate != 0) {
-//            matrix.setRotate(newRotate);//旋转角度
-            matrix.setRotate(newRotate, width/2f, height/2f);
-        }
-        Bitmap newBM = Bitmap.createBitmap(origin, 0, 0, width, height, matrix, fillter);
-        return newBM;
-    }
-    //保存位图
-    public static void saveFile(Bitmap bm, String fileName, String path) throws IOException {
-        File foder = new File(path);
-        if (!foder.exists()) {
-            foder.mkdir();
-        }
-        File myCaptureFile = new File(path, fileName);
-        if (!myCaptureFile.exists()) {
-            myCaptureFile.createNewFile();
-        }
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(myCaptureFile));
-        bm.compress(Bitmap.CompressFormat.JPEG, 100, bos);
-        bos.flush();
-        bos.close();
-    }
-    /**
-     * 获取数组最值
-     */
-    private int getMaxIndex(float arr[]) {
-        float max = arr[0];
-        int maxIndex = 0;
-        for (int i = 1; i < arr.length; i++) {
-            if (arr[i] > max) {
-                max = arr[i];
-                maxIndex = i;
-            }
-        }
-        return maxIndex;
     }
 
     //存储权限检查
@@ -236,40 +226,30 @@ public class MainActivity extends Activity {
         }
     }
 
-    void copyFilesFromAssets(Context context, String oldPath, String newPath) {
-        try {
-            String[] fileNames = context.getAssets().list(oldPath);
-            if (fileNames.length > 0) {
-                // directory
-                File file = new File(newPath);
-                if (!file.mkdir())
-                {
-                    Log.d("mkdir","can't make folder");
-                }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // TODO Auto-generated method stub
+        if (resultCode != Activity.RESULT_OK) {
+            Log.e(TAG, "onActivityResult() error, resultCode: " + resultCode);
+            super.onActivityResult(requestCode, resultCode, data);
+            return;
+        }
+        //接收图片选择回调结果
+        if (requestCode == FILE_SELECT_CODE) {
+            recognizeFromPath(data);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
 
-                for (String fileName : fileNames) {
-                    if(!file.mkdir()){
-                        new File(newPath + "/" + fileName).deleteOnExit();
-                    }
-                    copyFilesFromAssets(context, oldPath + "/" + fileName,
-                            newPath + "/" + fileName);
-                }
-            } else {
-                // file
-                InputStream is = context.getAssets().open(oldPath);
-                FileOutputStream fos = new FileOutputStream(new File(newPath));
-                byte[] buffer = new byte[1024];
-                int byteCount;
-                while ((byteCount = is.read(buffer)) != -1) {
-                    fos.write(buffer, 0, byteCount);
-                }
-                fos.flush();
-                is.close();
-                fos.close();
-            }
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    //本地图片选择
+    private void chooseLocalFile() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        try {
+            startActivityForResult(Intent.createChooser(intent, "选择文件"), FILE_SELECT_CODE);
+        } catch (android.content.ActivityNotFoundException ex) {
+            Toast.makeText(this, "亲，木有文件管理器啊-_-!!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -280,7 +260,7 @@ public class MainActivity extends Activity {
             String assetPath = "Mnist";
             String sdcardPath = Environment.getExternalStorageDirectory()
                     + File.separator + assetPath;
-            copyFilesFromAssets(this, assetPath, sdcardPath);
+            Utils.copyFilesFromAssets(this, assetPath, sdcardPath);
         }catch (Exception e){
             Log.e(TAG, "模型拷贝失败：" + e.getMessage());
         }
@@ -300,5 +280,6 @@ public class MainActivity extends Activity {
     public void onDestroy() {
         super.onDestroy();
         unInitModel();
+        finish();
     }
 }

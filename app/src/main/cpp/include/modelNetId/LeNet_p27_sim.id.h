@@ -1,8 +1,8 @@
-#ifndef NCNN_INCLUDE_GUARD_LeNet_p20_sim_id_h
-#define NCNN_INCLUDE_GUARD_LeNet_p20_sim_id_h
-namespace LeNet_p20_sim_param_id {
-const int LAYER_input_1 = 0;
-const int BLOB_input_1 = 0;
+#ifndef NCNN_INCLUDE_GUARD_LeNet_p27_sim_id_h
+#define NCNN_INCLUDE_GUARD_LeNet_p27_sim_id_h
+namespace LeNet_p27_sim_param_id {
+const int LAYER_data = 0;
+const int BLOB_data = 0;
 const int LAYER_21 = 1;
 const int BLOB_21 = 1;
 const int LAYER_22 = 2;
@@ -29,7 +29,7 @@ const int LAYER_43 = 12;
 const int BLOB_43 = 12;
 const int LAYER_44 = 13;
 const int BLOB_44 = 13;
-const int LAYER_45 = 14;
-const int BLOB_45 = 14;
-} // namespace LeNet_p20_sim_param_id
-#endif // NCNN_INCLUDE_GUARD_LeNet_p20_sim_id_h
+const int LAYER_prob = 14;
+const int BLOB_prob = 14;
+} // namespace LeNet_p27_sim_param_id
+#endif // NCNN_INCLUDE_GUARD_LeNet_p27_sim_id_h
