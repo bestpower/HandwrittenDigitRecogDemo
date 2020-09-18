@@ -14,6 +14,14 @@ namespace HwDr {
     #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,TAG,__VA_ARGS__)
     #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__))
 
+    unsigned long get_current_time(void)
+    {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        return (tv.tv_sec*1000000 + tv.tv_usec);
+    }
+
+
     bool BitmapToMatrix(JNIEnv * env, jobject obj_bitmap, cv::Mat & matrix){
         // 保存图片像素数据
         void * bitmapPixels;

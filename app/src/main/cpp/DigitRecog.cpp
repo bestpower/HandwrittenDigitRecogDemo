@@ -10,29 +10,27 @@
 
 namespace HwDr {
 
-    //载入模型数据
-    DigitRecog::DigitRecog(const std::string &model_path) {
-        std::string param_files = model_path + "LeNet_p27_sim.param";
-        std::string bin_files = model_path + "LeNet_p27_sim.bin";
-        DigitRecognet.load_param(param_files.data());
-        DigitRecognet.load_model(bin_files.data());
-    }
-
-    //加密方式载入
     static ncnn::UnlockedPoolAllocator g_blob_pool_allocator;
     static ncnn::PoolAllocator g_workspace_pool_allocator;
-    //加密方式模型载入
+
+    //载入模型数据
+//    DigitRecog::DigitRecog(const std::string &model_path) {
     DigitRecog::DigitRecog(AAssetManager *mgr) {
+//        std::string param_files = model_path + "LeNet_p27_sim.param";
+//        std::string bin_files = model_path + "LeNet_p27_sim.bin";
+//        DigitRecognet.load_param(param_files.data());
+//        DigitRecognet.load_model(bin_files.data());
+
         ncnn::Option opt;
         opt.blob_allocator = &g_blob_pool_allocator;
         opt.workspace_allocator = &g_workspace_pool_allocator;
         DigitRecognet.opt = opt;
         // init param
         {
-            int retp = DigitRecognet.load_param_bin(mgr, "Mnist/models/LeNet_p27_sim.param.bin");
+            int retp = DigitRecognet.load_param(mgr, "Mnist/models/LeNet_p27_sim.param");
             if (retp != 0)
             {
-                LOGE("load_param_bin failed");
+                LOGE("load_param failed");
             }
         }
         // init bin
@@ -45,6 +43,31 @@ namespace HwDr {
         }
     }
 
+
+    //加密方式模型载入
+//    DigitRecog::DigitRecog(AAssetManager *mgr) {
+//        ncnn::Option opt;
+//        opt.blob_allocator = &g_blob_pool_allocator;
+//        opt.workspace_allocator = &g_workspace_pool_allocator;
+//        DigitRecognet.opt = opt;
+//        // init param
+//        {
+//            int retp = DigitRecognet.load_param_bin(mgr, "Mnist/models/LeNet_p27_sim.param.bin");
+//            if (retp != 0)
+//            {
+//                LOGE("load_param_bin failed");
+//            }
+//        }
+//        // init bin
+//        {
+//            int retm = DigitRecognet.load_model(mgr, "Mnist/models/LeNet_p27_sim.bin");
+//            if (retm != 0)
+//            {
+//                LOGE("load_model_bin failed");
+//            }
+//        }
+//    }
+
     DigitRecog::~DigitRecog() {
         DigitRecognet.clear();
     }
@@ -52,7 +75,9 @@ namespace HwDr {
         threadnum = threadNum;
     }
     //遮挡模型推理结构
+    unsigned long time_0, time_1;
     void DigitRecog::DigitRecogNet(ncnn::Mat& img_) {
+        time_0 = get_current_time();
         ncnn::Extractor ex = DigitRecognet.create_extractor();
         ex.set_num_threads(threadnum);
         ex.set_light_mode(true);
@@ -61,6 +86,8 @@ namespace HwDr {
         ncnn::Mat out;
 //        ex.extract("prob", out);     // output node
         ex.extract(LeNet_p27_sim_param_id::BLOB_prob, out);
+        time_1 = get_current_time();
+        LOGD("Model inferenced cost %ld", (time_1-time_0)/1000);
 
         // manually call softmax on the fc output
         // convert result into probability

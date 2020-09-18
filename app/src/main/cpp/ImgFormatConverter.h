@@ -26,6 +26,7 @@
 
 
 namespace HwDr {
+    unsigned long get_current_time(void);
     bool BitmapToMatrix(JNIEnv * env, jobject obj_bitmap, cv::Mat & matrix);
     bool MatrixToBitmap(JNIEnv * env, cv::Mat & matrix, jobject obj_bitmap);
     cv::Mat bytesToMat(unsigned char *bytesData, int w, int h, int c);

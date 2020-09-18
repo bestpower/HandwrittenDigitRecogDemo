@@ -11,7 +11,7 @@ public class HwDr {
         System.loadLibrary("HwDr");
     }
     //模型初始化
-    public native boolean MnistModelInit(String mnistModelPath);
+//    public native boolean MnistModelInit(String mnistModelPath);
     public native boolean MnistAssetModelInit(AssetManager amgr);//加密模型加载
     //线程设置
     public native boolean SetThreadsNumber(int threadsNumber);
@@ -26,13 +26,13 @@ public class HwDr {
     private int availableThreadsNum = 0;//可调用线程数
 
     //从本地路径初始化模型
-    public HwDr(String modelPath){
-        init = MnistModelInit(modelPath);
-        if(init) {
-            availableThreadsNum = CpuUtils.getNumberOfCPUCores();
-            SetThreadsNumber(availableThreadsNum);
-        }
-    }
+//    public HwDr(String modelPath){
+//        init = MnistModelInit(modelPath);
+//        if(init) {
+//            availableThreadsNum = CpuUtils.getNumberOfCPUCores();
+//            SetThreadsNumber(availableThreadsNum);
+//        }
+//    }
 
     //加密方式初始化模型
     public HwDr(AssetManager assetManager){

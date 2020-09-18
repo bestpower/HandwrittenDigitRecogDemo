@@ -41,53 +41,53 @@ bool detection_sdk_init_ok = false;
 
 extern "C" {
 
-	JNIEXPORT jboolean JNICALL
-	Java_paxsz_ai_HwDr_MnistModelInit(JNIEnv *env, jobject instance, jstring MnistModelPath_) {
-		 LOGD("JNI开始手写数字识别模型初始化");
-		//如果已初始化则直接返回
-		if (detection_sdk_init_ok) {
-			LOGD("手写数字识别模型已经导入");
-			return jboolean(true);
-		}
-		jboolean tRet = jboolean(false);
-		if (NULL == MnistModelPath_) {
-		    LOGD("导入的模型目录的目录为空");
-			return tRet;
-		}
-
-		//获取MMNIST模型的绝对路径的目录（不是/aaa/bbb.bin这样的路径，是/aaa/)
-		const char *MnistModelPath = env->GetStringUTFChars(MnistModelPath_, 0);
-		if (NULL == MnistModelPath) {
-			return tRet;
-		}
-
-		std::string tMnistModelDir = MnistModelPath;
-        std::string tLastChar = tMnistModelDir.substr(tMnistModelDir.length() - 1, 1);
-		//目录补齐/
-		if ("\\" == tLastChar) {
-			tMnistModelDir = tMnistModelDir.substr(0, tMnistModelDir.length() - 1) + "/";
-		} else if (tLastChar != "/") {
-			tMnistModelDir += "/";
-		}
-
-		// use vulkan compute
-	//    ncnn::Option opt;
-	//    opt.lightmode = true;
-	//    opt.num_threads = 4;
-	//    opt.blob_allocator = &g_blob_pool_allocator;
-	//    opt.workspace_allocator = &g_workspace_pool_allocator;
-	//    LOGD("use_vulkan_compute: count = %d", ncnn::get_gpu_count());
-	//    if (ncnn::get_gpu_count() != 0) {
-	//        opt.use_vulkan_compute = true;
-	//    }
-
-		mDigitRecog = new DigitRecog(tMnistModelDir);
-
-		env->ReleaseStringUTFChars(MnistModelPath_, MnistModelPath);
-		detection_sdk_init_ok = true;
-		tRet = jboolean(true);
-		return tRet;
-	}
+//	JNIEXPORT jboolean JNICALL
+//	Java_paxsz_ai_HwDr_MnistModelInit(JNIEnv *env, jobject instance, jstring MnistModelPath_) {
+//		 LOGD("JNI开始手写数字识别模型初始化");
+//		//如果已初始化则直接返回
+//		if (detection_sdk_init_ok) {
+//			LOGD("手写数字识别模型已经导入");
+//			return jboolean(true);
+//		}
+//		jboolean tRet = jboolean(false);
+//		if (NULL == MnistModelPath_) {
+//		    LOGD("导入的模型目录的目录为空");
+//			return tRet;
+//		}
+//
+//		//获取MMNIST模型的绝对路径的目录（不是/aaa/bbb.bin这样的路径，是/aaa/)
+//		const char *MnistModelPath = env->GetStringUTFChars(MnistModelPath_, 0);
+//		if (NULL == MnistModelPath) {
+//			return tRet;
+//		}
+//
+//		std::string tMnistModelDir = MnistModelPath;
+//        std::string tLastChar = tMnistModelDir.substr(tMnistModelDir.length() - 1, 1);
+//		//目录补齐/
+//		if ("\\" == tLastChar) {
+//			tMnistModelDir = tMnistModelDir.substr(0, tMnistModelDir.length() - 1) + "/";
+//		} else if (tLastChar != "/") {
+//			tMnistModelDir += "/";
+//		}
+//
+//		// use vulkan compute
+//	//    ncnn::Option opt;
+//	//    opt.lightmode = true;
+//	//    opt.num_threads = 4;
+//	//    opt.blob_allocator = &g_blob_pool_allocator;
+//	//    opt.workspace_allocator = &g_workspace_pool_allocator;
+//	//    LOGD("use_vulkan_compute: count = %d", ncnn::get_gpu_count());
+//	//    if (ncnn::get_gpu_count() != 0) {
+//	//        opt.use_vulkan_compute = true;
+//	//    }
+//
+//		mDigitRecog = new DigitRecog(tMnistModelDir);
+//
+//		env->ReleaseStringUTFChars(MnistModelPath_, MnistModelPath);
+//		detection_sdk_init_ok = true;
+//		tRet = jboolean(true);
+//		return tRet;
+//	}
 
     JNIEXPORT jboolean JNICALL
     Java_paxsz_ai_HwDr_MnistAssetModelInit(JNIEnv *env, jobject instance, jobject assetManager) {
@@ -182,7 +182,7 @@ extern "C" {
         //转换图片数据格式
         ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(matBitmap.data, ncnn::Mat::PIXEL_BGRA2GRAY, w, h, 28, 28);
         //输入数据归一化
-        const float norm_vals[3] = {1/255.f, 1/255.f, 1/255.f};
+        const float norm_vals[1] = {1/255.f};
         ncnn_img.substract_mean_normalize(0, norm_vals);
 
         std::vector<float> feature;

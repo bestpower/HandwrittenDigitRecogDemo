@@ -57,8 +57,6 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        verifyStoragePermissions(this);
-
         mHandWriteView = (HandWriteView) findViewById(R.id.handWriteView);
         mResultView = (TextView) findViewById(R.id.resultShow);
 
@@ -89,6 +87,17 @@ public class MainActivity extends Activity {
             }
         });
 
+        Button mSaveBtn = (Button) findViewById(R.id.btnSave);
+        mSaveBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //保存当前写字画布为图片
+                buttonSaveCurrentImg();
+            }
+        });
+
+
+
         Button mClearDrawBtn = (Button) findViewById(R.id.btnClear);
         mClearDrawBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -98,13 +107,15 @@ public class MainActivity extends Activity {
             }
         });
 
+        verifyStoragePermissions(MainActivity.this);
+
     }
 
     //初始化模型
     public void initModels(){
         //模型初始化
-        File sdDir = Environment.getExternalStorageDirectory();//获取跟目录
-        String sdPath = sdDir.toString() + "/Mnist/models/";//人脸检测模型
+//        File sdDir = Environment.getExternalStorageDirectory();//获取跟目录
+//        String sdPath = sdDir.toString() + "/Mnist/models/";//人脸检测模型
 //        if(mHwDr == null) mHwDr = new HwDr(sdPath);//普通加载
         if(mHwDr == null) mHwDr = new HwDr(getAssets());//加密加载
     }
@@ -118,11 +129,12 @@ public class MainActivity extends Activity {
         }
     }
     int input_num = 0;
+    Bitmap handDrawBitmap = null;
     private void buttonRecognizeOnClick(View v){
         long timeRecognizeAll = System.currentTimeMillis();
-        Bitmap tmpBitmap = mHandWriteView.returnBitmap();
-        Log.i(TAG, "HandWriteView_W_H = " + tmpBitmap.getWidth() + " " + tmpBitmap.getHeight());
-        if(null == tmpBitmap)
+        handDrawBitmap = mHandWriteView.returnBitmap();
+        Log.i(TAG, "HandWriteView_W_H = " + handDrawBitmap.getWidth() + " " + handDrawBitmap.getHeight());
+        if(null == handDrawBitmap)
             return;
         //预处理
 //        byte[] tmpBytes = getPixelsRGBA(tmpBitmap);
@@ -131,7 +143,7 @@ public class MainActivity extends Activity {
         long timeLeNetPredict = System.currentTimeMillis();
         //推理
 //        float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());
-        float[] response = mHwDr.HwDigitRecogFromBitmap(tmpBitmap, tmpBitmap.getWidth(), tmpBitmap.getHeight());
+        float[] response = mHwDr.HwDigitRecogFromBitmap(handDrawBitmap, handDrawBitmap.getWidth(), handDrawBitmap.getHeight());
 
         timeLeNetPredict = System.currentTimeMillis() - timeLeNetPredict;
         Log.i(TAG, "调用模型时间：" + timeLeNetPredict);
@@ -177,6 +189,19 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private void buttonSaveCurrentImg(){
+        if(null == handDrawBitmap)
+            return;
+        try {
+            Utils.saveFile(handDrawBitmap,
+                    System.currentTimeMillis() + ".jpg",
+                    "/sdcard/TestDigitImgs");
+        }catch (IOException e){
+            e.getStackTrace();
+        }
+    }
+
     private void buttonClearDrawOnClick(View v){
         mResultView.setText("The recognition result is: ");
         mHandWriteView.clearDraw();
@@ -194,12 +219,14 @@ public class MainActivity extends Activity {
                 if (permission_1 != PackageManager.PERMISSION_GRANTED ||
                         permission_2 != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(activity, PERMISSIONS_STORAGE, REQUEST_EXTERNAL_STORAGE);
-                }else{
-                    InitModelFiles();
                 }
-            }else{
-                InitModelFiles();
+//                else{
+//                    InitModelFiles();
+//                }
             }
+//            else{
+//                InitModelFiles();
+//            }
         } catch (Exception e) {
             e.printStackTrace();
         }

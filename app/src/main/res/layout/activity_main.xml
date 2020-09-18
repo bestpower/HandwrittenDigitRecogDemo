@@ -23,34 +23,49 @@
     <Button
         android:id="@+id/btnInitModel"
         android:layout_below="@id/handWriteView"
-        android:layout_width="wrap_content"
+        android:layout_width="70dp"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft = "true"
-        android:text="Init" />
+        android:text="Init"
+        android:textSize="10sp"/>
 
     <Button
         android:id="@+id/btnRecognize"
-        android:layout_width="wrap_content"
+        android:layout_width="70dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/handWriteView"
         android:layout_toRightOf="@id/btnInitModel"
-        android:text="Recognize" />
+        android:text="Recog"
+        android:textSize="10sp"/>
 
     <Button
         android:id="@+id/btnSelect"
-        android:layout_width="wrap_content"
+        android:layout_width="70dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/handWriteView"
+        android:layout_toLeftOf="@id/btnSave"
+        android:text="Select"
+        android:textSize="10sp"/>
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="70dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/handWriteView"
         android:layout_toLeftOf="@id/btnClear"
-        android:text="Select" />
+        android:text="Save"
+        android:textSize="10sp"/>
 
     <Button
         android:id="@+id/btnClear"
         android:layout_below="@id/handWriteView"
-        android:layout_width="wrap_content"
+        android:layout_width="70dp"
         android:layout_height="wrap_content"
         android:layout_alignParentRight = "true"
-        android:text="Clear" />
+        android:text="Clear"
+        android:textSize="10sp"/>
+
+
     <TextView
         android:id="@+id/resultShow"
         android:layout_below="@id/btnRecognize"
