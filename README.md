@@ -1,8 +1,8 @@
 # HandwrittenDigitRecogDemo
 
-## 手写数字识别AI模型在安卓端的调用示例
+## 手写数字识别AI模型在安卓端的部署使用示例详解
 
-### 开发环境
+### 0.开发环境
 
 > OS:Windows 10
 
@@ -16,11 +16,11 @@
 
 > Cmake 3.6
 
-### AI模型部署工具
+### 1.AI模型安卓端部署工具
 
 >  NCNN (https://github.com/Tencent/ncnn)
 
-#### AI模型部署工具编译环境
+#### 1.1 AI模型部署工具编译环境
 
 > Ubuntu 18.04
 
@@ -34,129 +34,171 @@
 
 > protobuf 3.5.1 (https://github.com/protocolbuffers/protobuf)
 
-#### AI模型编译及部署
+### 2 AI模型编译及部署
 
-##### 模型转换
+#### 2.1模型转换
 
-###### pytorch转onnx
+##### 2.1.1 pytorch转onnx
 
 '''python
 
+    # 定义模型加载设备（cpu&gpu）
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # 定义模型输入数据格式
     input = torch.randn(1, 1, 28, 28, device=device)
+    # 加载模型
     model = {Your_Net_Model_Class_Name}().to(device)
     net.load_state_dict(torch.load(input_pytorch_model_path))
+    # 固化膜性
     net.eval()
+    # 定义输入输出节点名称
     input_names = ['data']
     output_names = ['prob']
+    # 导出为onnx格式模型
     torch.onnx._export(model, input, output_onnx_model_path,
                        export_params=True, verbose=True, 
                        input_names=input_names, output_names=output_names)
 
 '''
 
-###### 精简化onnx
+##### 2.1.2 精简化onnx
+
+'''
+    
+    # 安装onnx模型精简工具
+    $ sudo pip3 install onnx-simplifier
+    # onnx模型精简命令
+    $ python3 -m onnxsim {Your_Onnx_Model_Name}.onnx {Your_Onnx_Sim_Model_Name}.onnx
 
 '''
 
-    sudo pip3 install onnx-simplifier
-    python3 -m onnxsim ${Your_Onnx_Model_Name}.onnx ${Your_Onnx_Sim_Model_Name}.onnx
+##### 2.1.3 编译安装protobuf
 
 '''
 
-###### 编译安装protobuf
+    $ tar -zxvf protobuf-3.5.1.tar.gz 
+    $ cd protobuf-3.5.1/
+    $ ./autogen.sh
+    $ ./configure
+    $ make -j4
+    $ sudo make install
+    $ sudo ldconfig
+    # 查看protobuf版本（验证安装配置是否成功）
+    $ protoc --version
 
 '''
 
-    tar -zxvf protobuf3.5.1.tar.gz 
-    cd protobuf-3.5.1/
-    ./autogen.sh
-    ./configure
-    make -j4
-    sudo make install
-    sudo ldconfig
-    protoc --version
+##### 2.1.4 编译ncnn相关转换工具
 
 '''
 
-###### 编译ncnn相关转换工具
+    $ cd {Your_Path}/ncnn/
+    $ mkdir -p build
+    $ cd build
+    $ cmake ..
+    $ make -j4
+
+##### 2.1.5 onnx转ncnn
 
 '''
 
-    cd ${Your_Path}/ncnn/
-    mkdir -p build
-    cd build
-    cmake ..
-    make -j4
-
-###### onnx转ncnn
+    $ cd {ncnn_path}/nuild/tools/onnx/
+    $ cp {your_onnx_file_path} ./
+    $ ./onnx2ncnn {your_onnx_file} {your_ncnn_param_file_name}.param {your_ncnn_bin_file_name}.bin
 
 '''
 
-    cd ${ncnn_path}/nuild/tools/onnx/
-    cp ${your_onnx_file_path} ./
-    ./onnx2ncnn ${your_onnx_file} ${your_ncnn_param_file_name}.param ${your_ncnn_bin_file_name}.bin
+>执行完以上命令，会得到 *.param和*.bin两个文件，可直接用于安卓应用中部署
+
+>拷贝*.param、*.bin两个文件到安卓应用工程中的asset文件夹下
 
 '''
 
-执行完以上命令，会得到 *.param和*.bin两个文件，可直接用于安卓应用中部署
+    $ ./ncnn2mem {your_ncnn_param_file_name}.param {your_ncnn_bin_file_name}.bin {your_ncnn_file_name}.id.h {your_ncnn_file_name}.mem.h
 
 '''
 
-    ./ncnn2mem ${your_ncnn_param_file_name}.param ${your_ncnn_bin_file_name}.bin ${your_ncnn_file_name}.id.h ${your_ncnn_file_name}.mem.h
-
-'''
-
-执行完以上命令，会得到
+>执行完以上命令，会得到
 *.param.bin、*.bin、*.id.h、*.mem.h四个文件，可用于安卓应用中加密部署（该方式无法通过反编译窥探网络模型相关信息）
 
-对于加密方式调用：
+>对于加密方式调用：
 
-拷贝*.param.bin、*.bin两个文件到安卓应用工程中的asset文件夹下
+>拷贝*.param.bin、*.bin两个文件到安卓应用工程中的asset文件夹下
 
-拷贝*.id.h到安卓应用工程中的cpp/include文件夹下
+>拷贝*.id.h到安卓应用工程中的cpp/include文件夹下
 
-##### 安卓端ncnn调用库编译
+#### 2.2 安卓端ncnn调用库编译
 
-###### 编译相关环境配置
+##### 2.2.1 编译相关环境配置
 
-> 减少编译库所在内存空间
+> 减少编译库所在内存空间（可选）
 
-‘’‘
+'''
 
     # Edit $ANDROID_NDK/build/cmake/android.toolchain.cmake with your favorite editor
     # remove "-g" line
     list(APPEND ANDROID_COMPILER_FLAGS
       -g
       -DANDROID
+      
+'''
 
-’‘’
-
-> 配置Vulkan（GPU加速）环境
+> 配置Vulkan（GPU加速）环境（可选）
 
 '''
 
     $ wget https://sdk.lunarg.com/sdk/download/1.1.114.0/linux/vulkansdk-linux-x86_64-1.1.114.0.tar.gz?Human=true -O vulkansdk-linux-x86_64-1.1.114.0.tar.gz
     $ tar -xf vulkansdk-linux-x86_64-1.1.114.0.tar.gz
     $ export VULKAN_SDK=`pwd`/1.1.114.0/x86_64
+    
+'''
+
+##### 2.2.2 编译32位 armV7 cpu
 
 '''
 
-###### 32位 armV7 cpu
+    $ cd {ncnn_path}/
+    $ mkdir -p build-android-armv7
+    $ cd build-android-armv7/
+    $ export ANDROID_NDK={Your_ndk_dir_path}
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="armeabi-v7a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-14 ..
+    $ make -j4
+    $ make install
 
 '''
 
-    cd {ncnn_path}/
-    mkdir -p build-android-armv7
-    cd build-android-armv7/
-    export ANDROID_NDK=${Your_ndk_dir_path}
-    cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI="armeabi-v7a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-14 ..
-    make -j4
-    make install
+##### 2.2.3 编译32位 armv7 gpu vulkan
+
+>修改CMakeLists.txt
+
+>option(NCNN_VULKAN "vulkan compute support" ON)
 
 '''
 
-###### 32位 armv7 gpu vulkan
+    $ mkdir -p build-android-armv7-vk
+    $ cd build-android-armv7-vk/
+    $ export ANDROID_NDK={Your_ndk_dir_path}
+    $ export VULKAN_SDK={Your_vulkan_sdk_dir_path}
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="armeabi-v7a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-24 -DNCNN_VULKAN=ON ..
+    $ make -j4
+    $ make install
+
+'''
+
+##### 2.2.4 编译64位 armv8 cpu
+
+'''
+
+    $ mkdir -p build-android-aarch64
+    $ cd build-android-aarch64/
+    $ export ANDROID_NDK={Your_ndk_dir_path}
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-21 ..
+    $ make -j4
+    $ make install
+
+'''
+
+##### 2.2.5 编译64位 armv8 gpu vulkan
 
 >修改CMakeLists.txt
 >
@@ -164,67 +206,36 @@
 
 '''
 
-    mkdir -p build-android-armv7-vk
-    cd build-android-armv7-vk/
-    export ANDROID_NDK=${Your_ndk_dir_path}
-    export VULKAN_SDK=${Your_vulkan_sdk_dir_path}
-    cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI="armeabi-v7a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-24 -DNCNN_VULKAN=ON ..
-    make -j4
-    make install
+    $ mkdir -p build-android-armv8-vk
+    $ cd build-android-armv8-vk/
+    $ export ANDROID_NDK={Your_ndk_dir_path}
+    $ export VULKAN_SDK={Your_vulkan_sdk_dir_path}
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-24 -DNCNN_VULKAN=ON ..
+    $ make -j4
+    $ make install
 
 '''
 
-###### 64位 armv8 cpu
+#### 2.3 安卓端ncnn库调用
+
+##### 2.3.1 拷贝上一步编译生成的库文件和头文件到对应安卓工程文件夹中
 
 '''
 
-    mkdir -p build-android-aarch64
-    cd build-android-aarch64/
-    export ANDROID_NDK=${Your_ndk_dir_path}
-    cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-21 ..
-    make -j4
-    make install
+    $ cd {ncnn_path}/{ncnn_android_build_path}/install
+    $ cp -r include/ncnn {Your_android_project_cpp_dir}/include/
+    $ cp lib/libncnn.a {Your_android_project_jniLibs_dir}/{ANDROID_ABI}/
 
 '''
 
-###### 64位 armv8 gpu vulkan
-
->修改CMakeLists.txt
->
->option(NCNN_VULKAN "vulkan compute support" ON)
-
-'''
-
-    mkdir -p build-android-armv8-vk
-    cd build-android-armv8-vk/
-    export ANDROID_NDK=${Your_ndk_dir_path}
-    export VULKAN_SDK=${Your_vulkan_sdk_dir_path}
-    cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-24 -DNCNN_VULKAN=ON ..
-    make -j4
-    make install
-
-'''
-
-##### 安卓端ncnn库调用
-
-###### 拷贝上一步编译生成的库文件和头文件到对应安卓工程文件夹中
-
-'''
-
-    cd ${ncnn_path}/${ncnn_android_build_path}/install
-    cp -r include/ncnn ${Your_android_project_cpp_dir}/include/
-    cp lib/libncnn.a ${Your_android_project_jniLibs_dir}/${ANDROID_ABI}/
-
-'''
-
-###### 配置安卓端app/build.gradle中ndk编译相关
+##### 2.3.2 配置安卓端app/build.gradle中ndk编译相关
 
 '''gradle
 
     android {
         defaultConfig {
             ndk {
-                    abiFilters "armeabi-v7a"
+                    abiFilters "armeabi-v7a", "arm64-v8a"
                     stl "gnustl_static"
             }
             externalNativeBuild {
@@ -249,19 +260,20 @@
 
 '''
 
-
-###### 配置CMakeLists.txt
+##### 2.3.3 配置CMakeLists.txt
 
 '''txt
 
-    添加ncnn库
+    # 添加ncnn库
     add_library(libncnn STATIC IMPORTED )
     set_target_properties(
                         libncnn
                         PROPERTIES IMPORTED_LOCATION
-                        ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libncnn.a
+                        {CMAKE_SOURCE_DIR}/src/main/jniLibs/{ANDROID_ABI}/libncnn.a
                         )
-    #添加工程所依赖的库
+    # vulkan（可选）
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  -Werror -D VK_USE_PLATFORM_ANDROID_KHR")
+    # 添加工程所依赖的库
     find_library(log-lib log android)
 
     target_link_libraries( HwDr
@@ -273,7 +285,7 @@
 
 '''
 
-###### jni调用代码编写
+##### 2.3.4 jni调用代码编写
 
 '''cpp
 
@@ -300,13 +312,17 @@
     }
 
     //模型推理部分关键代码
+    //创建ncnn模型推理机
     ncnn::Extractor ex = DigitRecognet.create_extractor();
+    //配置推理机选项
     ex.set_num_threads(threadnum);
     ex.set_light_mode(true);
+    //在模型输入节点传入数据
     ex.input(LeNet_p27_sim_param_id::BLOB_data, img_);
     ncnn::Mat out;
+    //在模型输出节点接收数据
     ex.extract(LeNet_p27_sim_param_id::BLOB_prob, out);
-    //输出数据概率化
+    //输出数据概率化（针对训练代码中未引入概率化输出处理的情况）
     {
         ncnn::Layer* softmax = ncnn::create_layer("Softmax");
         ncnn::ParamDict pd;
@@ -343,7 +359,7 @@
 
 '''
 
-###### java调用代码编写
+##### 2.3.5 java调用代码编写
 
 '''java
 
@@ -375,11 +391,13 @@
 
 '''
 
-###### 安卓端ncnn调用相关数据预处理
+### 3 安卓端调用ncnn模型相关通用方法总结
 
-> 模型初始化
+#### 3.1 安卓端ncnn调用相关数据预处理
 
-> 正常方式
+##### 3.1.1 模型初始化
+
+> 正常方式（读取asset文件）
 
 '''
 
@@ -402,7 +420,7 @@
 
 '''
 
-> 加密方式
+> 加密方式（读取asset文件）
 
 '''
 
@@ -425,10 +443,9 @@
 
 '''
 
-> 输入模型图像数据预处理
+##### 3.1.2 输入模型图像数据预处理
 
 > 字节数组输入
-
 
 '''
 
@@ -441,7 +458,7 @@
     //字节数组预处理
     jbyte *digitImgData = env->GetByteArrayElements(digitImgData_, NULL);
     unsigned char *digitImgCharData = (unsigned char *) digitImgData;
-    //转换图片数据格式
+    //转换图片数据格式（将RGBA四通道数据转为GRAY单通道数据，并缩放到指定大小）
     ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(digitImgCharData, ncnn::Mat::PIXEL_RGBA2GRAY, w, h, 28, 28);
     //输入数据归一化
     const float norm_vals[1] = {1/255.f};
@@ -449,7 +466,7 @@
 
 '''
 
-> 位图输入
+> 位图输入(需要引入opencv相关库)
 
 
 '''
@@ -468,7 +485,7 @@
 
 '''
 
-> 路径输入
+> 路径输入(需要引入opencv相关库)
 
 
 '''
@@ -485,9 +502,11 @@
 
 '''
 
-###### 安卓端性能测试
+#### 3.2 安卓端纯性能测试
 
-> 修改${ncnn_path}/benchmark/benchncnn.cpp
+##### 3.2.1 编写测试代码
+
+> 修改{ncnn_path}/benchmark/benchncnn.cpp
 
 '''cpp
 
@@ -497,8 +516,7 @@
     {
         ncnn::Extractor ex = net.create_extractor();
         ex.input("data", in);
-        ex.extract("output", out);
-        // ex.extract("prob", out);
+        ex.extract("prob", out);
     }
 
     double time_min = DBL_MAX;
@@ -525,17 +543,21 @@
 
 '''
 
-> 重新编译ncnn安卓库
+##### 3.2.2 重新编译ncnn安卓库（详见2.2节内容）
+
+##### 3.2.3 部署运行测试应用
 
 '''
 
-    $ adb push ${ncnn-android-build-path}/benchmark/benchncnn /data/local/tmp/
+    $ adb push {ncnn-android-build-path}/benchmark/benchncnn /data/local/tmp/
     $ adb push <ncnn-root-dir>/benchmark/*.param /data/local/tmp/
     $ adb shell
     $ cd /data/local/tmp/
     $ ./benchncnn [loop count] [num threads] [powersave] [gpu device] [cooling down]
 
 '''
+
+##### 3.2.4 部门常见机型测试结果统计
 
 > A920 7.1 MSM8909
 
