@@ -4,7 +4,7 @@
 
 ### 0.开发环境
 
-> OS:Windows 10
+> OS:Windows 10 & Ubuntu 18.04
 
 > IDE: Android Studio 3.2
 
@@ -48,9 +48,9 @@
     input = torch.randn(1, 1, 28, 28, device=device)
     # 加载模型
     model = {Your_Net_Model_Class_Name}().to(device)
-    net.load_state_dict(torch.load(input_pytorch_model_path))
-    # 固化膜性
-    net.eval()
+    model.load_state_dict(torch.load(input_pytorch_model_path))
+    # 固化模型
+    model.eval()
     # 定义输入输出节点名称
     input_names = ['data']
     output_names = ['prob']
@@ -92,6 +92,7 @@
 
 '''
 
+    $ git clone https://github.com/Tencent/ncnn
     $ cd {Your_Path}/ncnn/
     $ mkdir -p build
     $ cd build
@@ -131,6 +132,13 @@
 
 ##### 2.2.1 编译相关环境配置
 
+> 配置NDK路径
+
+'''
+
+    $ export ANDROID_NDK={Your_ndk_dir_path}
+'''
+
 > 减少编译库所在内存空间（可选）
 
 '''
@@ -160,8 +168,10 @@
     $ cd {ncnn_path}/
     $ mkdir -p build-android-armv7
     $ cd build-android-armv7/
-    $ export ANDROID_NDK={Your_ndk_dir_path}
-    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="armeabi-v7a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-14 ..
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI="armeabi-v7a" \
+            -DANDROID_ARM_NEON=ON \
+            -DANDROID_PLATFORM=android-14 ..
     $ make -j4
     $ make install
 
@@ -177,9 +187,11 @@
 
     $ mkdir -p build-android-armv7-vk
     $ cd build-android-armv7-vk/
-    $ export ANDROID_NDK={Your_ndk_dir_path}
-    $ export VULKAN_SDK={Your_vulkan_sdk_dir_path}
-    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="armeabi-v7a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-24 -DNCNN_VULKAN=ON ..
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI="armeabi-v7a" \
+            -DANDROID_ARM_NEON=ON \
+            -DANDROID_PLATFORM=android-24 \
+            -DNCNN_VULKAN=ON ..
     $ make -j4
     $ make install
 
@@ -191,8 +203,9 @@
 
     $ mkdir -p build-android-aarch64
     $ cd build-android-aarch64/
-    $ export ANDROID_NDK={Your_ndk_dir_path}
-    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-21 ..
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI="arm64-v8a" \
+            -DANDROID_PLATFORM=android-21 ..
     $ make -j4
     $ make install
 
@@ -208,9 +221,11 @@
 
     $ mkdir -p build-android-armv8-vk
     $ cd build-android-armv8-vk/
-    $ export ANDROID_NDK={Your_ndk_dir_path}
-    $ export VULKAN_SDK={Your_vulkan_sdk_dir_path}
-    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_ARM_NEON=ON -DANDROID_PLATFORM=android-24 -DNCNN_VULKAN=ON ..
+    $ cmake -DCMAKE_TOOLCHAIN_FILE={ANDROID_NDK}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI="arm64-v8a" \
+            -DANDROID_ARM_NEON=ON \
+            -DANDROID_PLATFORM=android-24 \
+            -DNCNN_VULKAN=ON ..
     $ make -j4
     $ make install
 
@@ -289,7 +304,7 @@
 
 '''cpp
 
-    //模型加载不分关键代码
+    //模型加载部分关键代码
     ncnn::Option opt;
     opt.blob_allocator = &g_blob_pool_allocator;
     opt.workspace_allocator = &g_workspace_pool_allocator;
@@ -382,7 +397,6 @@
             Log.i(TAG, "模型初始化成功");
         }
     }
-
     //Bitmap(手写数字黑底白字图像)转Byte[]
     int bytes = image.getByteCount();
     ByteBuffer buffer = ByteBuffer.allocate(bytes);
