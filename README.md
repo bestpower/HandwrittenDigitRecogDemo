@@ -72,10 +72,19 @@
 
 '''
 
-##### 2.1.3 编译安装protobuf
+##### 2.1.3 安装相关依赖库
 
 '''
 
+    # 安装opencv
+    $ sudo apt-get install libopencv-dev
+    
+'''
+
+'''
+
+    # 编译安装protobuf
+    $ sudo apt-get install autoconf automake libtool curl make g++ unzip
     $ tar -zxvf protobuf-3.5.1.tar.gz 
     $ cd protobuf-3.5.1/
     $ ./autogen.sh
@@ -101,32 +110,29 @@
 
 ##### 2.1.5 onnx转ncnn
 
+> 普通转换
+
 '''
 
     $ cd {ncnn_path}/nuild/tools/onnx/
     $ cp {your_onnx_file_path} ./
     $ ./onnx2ncnn {your_onnx_file} {your_ncnn_param_file_name}.param {your_ncnn_bin_file_name}.bin
+    
+    执行完以上命令，会得到 *.param和*.bin两个文件，可直接用于安卓应用中部署
+    拷贝*.param、*.bin两个文件到安卓应用工程中的asset文件夹下
 
 '''
 
->执行完以上命令，会得到 *.param和*.bin两个文件，可直接用于安卓应用中部署
-
->拷贝*.param、*.bin两个文件到安卓应用工程中的asset文件夹下
+> 加密转换
 
 '''
 
     $ ./ncnn2mem {your_ncnn_param_file_name}.param {your_ncnn_bin_file_name}.bin {your_ncnn_file_name}.id.h {your_ncnn_file_name}.mem.h
-
+    
+    执行完以上命令，会得到*.param.bin、*.bin、*.id.h、*.mem.h四个文件，可用于安卓应用中加密部署（该方式无法通过反编译窥探网络模型相关信息）
+    拷贝*.param.bin、*.bin两个文件到安卓应用工程中的asset文件夹下
+    拷贝*.id.h到安卓应用工程中的cpp/include文件夹下
 '''
-
->执行完以上命令，会得到
-*.param.bin、*.bin、*.id.h、*.mem.h四个文件，可用于安卓应用中加密部署（该方式无法通过反编译窥探网络模型相关信息）
-
->对于加密方式调用：
-
->拷贝*.param.bin、*.bin两个文件到安卓应用工程中的asset文件夹下
-
->拷贝*.id.h到安卓应用工程中的cpp/include文件夹下
 
 #### 2.2 安卓端ncnn调用库编译
 
@@ -214,7 +220,7 @@
 ##### 2.2.5 编译64位 armv8 gpu vulkan
 
 >修改CMakeLists.txt
->
+
 >option(NCNN_VULKAN "vulkan compute support" ON)
 
 '''
@@ -569,6 +575,11 @@
     $ cd /data/local/tmp/
     $ ./benchncnn [loop count] [num threads] [powersave] [gpu device] [cooling down]
 
+    [loop count]：批量测试次数
+    [num threads]：线程数（最大为cpu核心数）
+    [powersave]：资源使用：0=all cores, 1=little cores only, 2=big cores only
+    [gpu device]：运行设备, -1=cpu-only, 0=gpu0, 1=gpu1 ...
+    [cooling down]：是否进行热身, 0=disable, 1=enable
 '''
 
 ##### 3.2.4 部门常见机型测试结果统计
@@ -597,7 +608,7 @@
 
 '''
 
-> A930 7.1
+> A930 7.1 MSM8917
 
 '''
 
