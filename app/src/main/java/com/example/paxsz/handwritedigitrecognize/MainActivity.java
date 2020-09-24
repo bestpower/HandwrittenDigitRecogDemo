@@ -33,6 +33,9 @@ import java.util.Locale;
 
 import paxsz.ai.HwDr;
 
+/**
+ * Created by wyu on 2020/8/20.
+ */
 public class MainActivity extends Activity {
     private static final String TAG = "Hand_writing";
     //权限检查
@@ -114,10 +117,7 @@ public class MainActivity extends Activity {
     //初始化模型
     public void initModels(){
         //模型初始化
-//        File sdDir = Environment.getExternalStorageDirectory();//获取跟目录
-//        String sdPath = sdDir.toString() + "/Mnist/models/";//人脸检测模型
-//        if(mHwDr == null) mHwDr = new HwDr(sdPath);//普通加载
-        if(mHwDr == null) mHwDr = new HwDr(getAssets());//加密加载
+        if(mHwDr == null) mHwDr = new HwDr(getAssets());
     }
 
     //反初始化模型
@@ -142,8 +142,8 @@ public class MainActivity extends Activity {
 
         long timeLeNetPredict = System.currentTimeMillis();
         //推理
-//        float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());
-        float[] response = mHwDr.HwDigitRecogFromBitmap(handDrawBitmap, handDrawBitmap.getWidth(), handDrawBitmap.getHeight());
+//        float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());//字节数组输入
+        float[] response = mHwDr.HwDigitRecogFromBitmap(handDrawBitmap, handDrawBitmap.getWidth(), handDrawBitmap.getHeight());//位图输入
 
         timeLeNetPredict = System.currentTimeMillis() - timeLeNetPredict;
         Log.i(TAG, "调用模型时间：" + timeLeNetPredict);
@@ -156,7 +156,6 @@ public class MainActivity extends Activity {
         //结果显示
         mResultView.setText(mResultView.getText()+Arrays.toString(resposeStrs) +
                 "\n结果为：" + String.valueOf(prindict_num));
-        //Toast.makeText(getApplicationContext(),"The predict label is "+String.valueOf(response),Toast.LENGTH_SHORT).show();
         timeRecognizeAll = System.currentTimeMillis() - timeRecognizeAll;
         Log.i(TAG, "总识别处理时间：" + timeRecognizeAll);
     }
@@ -172,7 +171,7 @@ public class MainActivity extends Activity {
                 Log.d(TAG, "获取图片显示");
                 //推理
                 long timeLeNetPredict = System.currentTimeMillis();
-                float[] response = mHwDr.HwDigitRecogFromPath(Utils.getPhotoPathFromContentUri(this, selectUri));
+                float[] response = mHwDr.HwDigitRecogFromPath(Utils.getPhotoPathFromContentUri(this, selectUri));//路径输入
                 String[] resposeStrs = new String[response.length];
                 for(int i=0;i<response.length;i++){
                     resposeStrs[i] = String.format("%.3f", response[i]);
@@ -189,7 +188,7 @@ public class MainActivity extends Activity {
         }
     }
 
-
+    //保存当前画布图片
     private void buttonSaveCurrentImg(){
         if(null == handDrawBitmap)
             return;
@@ -201,7 +200,7 @@ public class MainActivity extends Activity {
             e.getStackTrace();
         }
     }
-
+    //清空画布内容
     private void buttonClearDrawOnClick(View v){
         mResultView.setText("The recognition result is: ");
         mHandWriteView.clearDraw();
@@ -220,13 +219,7 @@ public class MainActivity extends Activity {
                         permission_2 != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(activity, PERMISSIONS_STORAGE, REQUEST_EXTERNAL_STORAGE);
                 }
-//                else{
-//                    InitModelFiles();
-//                }
             }
-//            else{
-//                InitModelFiles();
-//            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -242,8 +235,6 @@ public class MainActivity extends Activity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     //申请成功，进行相应操作
                     Log.i(TAG, "存储权限申请成功");
-                    //拷贝
-                    InitModelFiles();
                 } else {
                     //申请失败，可以继续向用户解释。
                     Toast.makeText(this, "存储权限申请失败，应用将无法正常使用", Toast.LENGTH_SHORT).show();
@@ -280,18 +271,18 @@ public class MainActivity extends Activity {
         }
     }
 
-    void InitModelFiles()
-    {
-        try {
-            //ncnn
-            String assetPath = "Mnist";
-            String sdcardPath = Environment.getExternalStorageDirectory()
-                    + File.separator + assetPath;
-            Utils.copyFilesFromAssets(this, assetPath, sdcardPath);
-        }catch (Exception e){
-            Log.e(TAG, "模型拷贝失败：" + e.getMessage());
-        }
-    }
+//    void InitModelFiles()
+//    {
+//        try {
+//            //ncnn
+//            String assetPath = "Mnist";
+//            String sdcardPath = Environment.getExternalStorageDirectory()
+//                    + File.separator + assetPath;
+//            Utils.copyFilesFromAssets(this, assetPath, sdcardPath);
+//        }catch (Exception e){
+//            Log.e(TAG, "模型拷贝失败：" + e.getMessage());
+//        }
+//    }
 
     @Override
     public void onResume() {

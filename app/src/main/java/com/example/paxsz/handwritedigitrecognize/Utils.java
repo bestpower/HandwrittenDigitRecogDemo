@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * Created by wyu on 2020/9/15.
+ */
 public class Utils {
 
     /**
@@ -73,7 +76,7 @@ public class Utils {
         bos.close();
     }
     /**
-     * 获取数组最值
+     * 获取数组最值下标
      */
     public static int getMaxIndex(float arr[]) {
         float max = arr[0];

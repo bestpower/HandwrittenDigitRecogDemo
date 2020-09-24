@@ -7,10 +7,10 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-/**
- * Created by wyu on 2020/8/19.
- */
 
+/**
+ * Created by wyu on 2020/8/20.
+ */
 public class HandWriteView extends View{
 
     private Paint mPaint;

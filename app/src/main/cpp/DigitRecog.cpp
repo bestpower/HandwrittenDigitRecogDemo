@@ -14,17 +14,13 @@ namespace HwDr {
     static ncnn::PoolAllocator g_workspace_pool_allocator;
 
     //载入模型数据
-//    DigitRecog::DigitRecog(const std::string &model_path) {
     DigitRecog::DigitRecog(AAssetManager *mgr) {
-//        std::string param_files = model_path + "LeNet_p27_sim.param";
-//        std::string bin_files = model_path + "LeNet_p27_sim.bin";
-//        DigitRecognet.load_param(param_files.data());
-//        DigitRecognet.load_model(bin_files.data());
 
         ncnn::Option opt;
         opt.blob_allocator = &g_blob_pool_allocator;
         opt.workspace_allocator = &g_workspace_pool_allocator;
         DigitRecognet.opt = opt;
+
         // init param
         {
             int retp = DigitRecognet.load_param(mgr, "Mnist/models/LeNet_p27_sim.param");
@@ -81,17 +77,16 @@ namespace HwDr {
         ncnn::Extractor ex = DigitRecognet.create_extractor();
         ex.set_num_threads(threadnum);
         ex.set_light_mode(true);
-//        ex.input("data", img_);     // input node
-        ex.input(LeNet_p27_sim_param_id::BLOB_data, img_);
+        // input node
+//        ex.input("data", img_);//普通方式
+        ex.input(LeNet_p27_sim_param_id::BLOB_data, img_);//加密方式
         ncnn::Mat out;
-//        ex.extract("prob", out);     // output node
-        ex.extract(LeNet_p27_sim_param_id::BLOB_prob, out);
+        // output node
+//        ex.extract("prob", out);//普通方式
+        ex.extract(LeNet_p27_sim_param_id::BLOB_prob, out);//加密方式
         time_1 = get_current_time();
-        LOGD("Model inferenced cost %ld", (time_1-time_0)/1000);
+        LOGD("Model inferenced cost %ld", (time_1-time_0)/1000);//计时范围与benchmark对应
 
-        // manually call softmax on the fc output
-        // convert result into probability
-        // skip if your model already has softmax operation
         //概率化处理
         {
             ncnn::Layer* softmax = ncnn::create_layer("Softmax");
