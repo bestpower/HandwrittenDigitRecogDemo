@@ -2,6 +2,3 @@
 .idea
 .gradle
 .DS_Store
-/build
-.externalNativeBuild
-.cxx
