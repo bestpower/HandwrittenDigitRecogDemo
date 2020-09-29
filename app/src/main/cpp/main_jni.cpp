@@ -125,15 +125,9 @@ extern "C" {
 	}
 
     JNIEXPORT jfloatArray JNICALL
-    Java_paxsz_ai_HwDr_HwDigitRecogFromBitmap(JNIEnv *env, jobject instance, jobject digitImgBitmap, jint w, jint h) {
-        //位图输入处理
-        cv::Mat matBitmap;
-        bool ret = BitmapToMatrix(env, digitImgBitmap, matBitmap);
-        if(!ret){
-            return NULL;
-        }
+    Java_paxsz_ai_HwDr_HwDigitRecogFromBitmap(JNIEnv *env, jobject instance, jobject digitImgBitmap) {
         //转换图片数据格式
-        ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(matBitmap.data, ncnn::Mat::PIXEL_BGRA2GRAY, w, h, 28, 28);
+        ncnn::Mat ncnn_img = ncnn::Mat::from_android_bitmap_resize(env, digitImgBitmap, ncnn::Mat::PIXEL_BGRA2GRAY, 28, 28);
         //输入数据归一化
         const float norm_vals[3] = {1/255.f, 1/255.f, 1/255.f};
         ncnn_img.substract_mean_normalize(0, norm_vals);
@@ -151,7 +145,7 @@ extern "C" {
         env->SetFloatArrayRegion(featureArray,0,10,featureInfo);
 		//释放资源
 		env->DeleteLocalRef(digitImgBitmap);
-        matBitmap.release();
+        ncnn_img.release();
         std::vector<float>().swap(feature);
         //返回预测结果概率数组
         return featureArray;

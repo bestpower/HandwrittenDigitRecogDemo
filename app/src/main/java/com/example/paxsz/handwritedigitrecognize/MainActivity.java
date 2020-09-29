@@ -143,7 +143,7 @@ public class MainActivity extends Activity {
         long timeLeNetPredict = System.currentTimeMillis();
         //推理
 //        float[] response = mHwDr.HwDigitRecog(tmpBytes, tmpBitmap.getWidth(), tmpBitmap.getHeight());//字节数组输入
-        float[] response = mHwDr.HwDigitRecogFromBitmap(handDrawBitmap, handDrawBitmap.getWidth(), handDrawBitmap.getHeight());//位图输入
+        float[] response = mHwDr.HwDigitRecogFromBitmap(handDrawBitmap);//位图输入
 
         timeLeNetPredict = System.currentTimeMillis() - timeLeNetPredict;
         Log.i(TAG, "调用模型时间：" + timeLeNetPredict);

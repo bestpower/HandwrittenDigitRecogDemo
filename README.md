@@ -42,21 +42,20 @@
 
 '''python
 
-    # 定义模型加载设备（cpu&gpu）
+    # 定义模型加载设备（cpu & gpu）
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # 定义模型输入数据格式
     input = torch.randn(1, 1, 28, 28, device=device)
     # 加载模型
     model = {Your_Net_Model_Class_Name}().to(device)
-    model.load_state_dict(torch.load(input_pytorch_model_path))
+    model.load_state_dict(torch.load(input_pytorch_model_path, map_location=device))
     # 固化模型
     model.eval()
     # 定义输入输出节点名称
     input_names = ['data']
     output_names = ['prob']
     # 导出为onnx格式模型
-    torch.onnx._export(model, input, output_onnx_model_path,
-                       export_params=True, verbose=True, 
+    torch.onnx._export(model, input, output_onnx_model_path, export_params=True, verbose=True, 
                        input_names=input_names, output_names=output_names)
 
 '''
@@ -114,7 +113,7 @@
 
 '''
 
-    $ cd {ncnn_path}/nuild/tools/onnx/
+    $ cd {ncnn_path}/build/tools/onnx/
     $ cp {your_onnx_file_path} ./
     $ ./onnx2ncnn {your_onnx_file} {your_ncnn_param_file_name}.param {your_ncnn_bin_file_name}.bin
     
@@ -377,6 +376,7 @@
     for(int i = 0;i<10;i++){
         featureInfo[i] = feature[i];
     }
+    //提取数组中概率最大的元素对应序号为预测数字
 
 '''
 
@@ -417,7 +417,7 @@
 
 ##### 3.1.1 模型初始化
 
-> 正常方式（读取asset文件）
+> 正常方式（读取asset文件夹下模型文件）
 
 '''
 
@@ -481,13 +481,12 @@
     //转换图片数据格式（将RGBA四通道数据转为GRAY单通道数据，并缩放到指定大小）
     ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(digitImgCharData, ncnn::Mat::PIXEL_RGBA2GRAY, w, h, 28, 28);
     //输入数据归一化
-    const float norm_vals[1] = {1/255.f};
+    const float norm_vals[3] = {1/255.f, 1/255.f, 1/255.f};
     ncnn_img.substract_mean_normalize(0, norm_vals);
 
 '''
 
 > 位图输入(需要引入opencv相关库)
-
 
 '''
 
@@ -506,7 +505,6 @@
 '''
 
 > 路径输入(需要引入opencv相关库)
-
 
 '''
 
@@ -539,10 +537,6 @@
         ex.extract("prob", out);
     }
 
-    double time_min = DBL_MAX;
-    double time_max = -DBL_MAX;
-    double time_avg = 0;
-
     // 批量推理模型调用测试
     for (int i = 0; i < g_loop_count; i++)
     {
@@ -569,12 +563,13 @@
 
 '''
 
+    相关命令：
     $ adb push {ncnn-android-build-path}/benchmark/benchncnn /data/local/tmp/
     $ adb push <ncnn-root-dir>/benchmark/*.param /data/local/tmp/
     $ adb shell
     $ cd /data/local/tmp/
     $ ./benchncnn [loop count] [num threads] [powersave] [gpu device] [cooling down]
-
+    命令参数说明：
     [loop count]：批量测试次数
     [num threads]：线程数（最大为cpu核心数）
     [powersave]：资源使用：0=all cores, 1=little cores only, 2=big cores only
@@ -582,7 +577,7 @@
     [cooling down]：是否进行热身, 0=disable, 1=enable
 '''
 
-##### 3.2.4 部门常见机型测试结果统计
+##### 3.2.4 部门常见机型测试结果统计（示例）
 
 > A920 7.1 MSM8909
 

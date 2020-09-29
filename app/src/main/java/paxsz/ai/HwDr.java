@@ -21,7 +21,7 @@ public class HwDr {
     public native boolean MnistModelUnInit();
     //模型推理（三种输入方式）
     public native float[] HwDigitRecog(byte[] digitImgData, int w, int h);//字节数组输入
-    public native float[] HwDigitRecogFromBitmap(Bitmap digitImgBitmap, int w, int h);//位图输入
+    public native float[] HwDigitRecogFromBitmap(Bitmap digitImgBitmap);//位图输入
     public native float[] HwDigitRecogFromPath(String imgPath);//图片路径输入
 
     private boolean init;//模型初始化标志
