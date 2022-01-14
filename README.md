@@ -1,6 +1,6 @@
 # HandwrittenDigitRecogDemo
 
-## 手写数字识别AI模型在安卓端的部署使用示例详解
+## 手写数字识别AI模型在安卓端的部署使用流程示例详解
 
 ### 0.开发环境
 
@@ -106,6 +106,9 @@
     $ cd build
     $ cmake ..
     $ make -j4
+    
+'''    
+    
 
 ##### 2.1.5 onnx转ncnn
 
@@ -131,6 +134,7 @@
     执行完以上命令，会得到*.param.bin、*.bin、*.id.h、*.mem.h四个文件，可用于安卓应用中加密部署（该方式无法通过反编译窥探网络模型相关信息）
     拷贝*.param.bin、*.bin两个文件到安卓应用工程中的asset文件夹下
     拷贝*.id.h到安卓应用工程中的cpp/include文件夹下
+    
 '''
 
 #### 2.2 安卓端ncnn调用库编译
@@ -142,6 +146,7 @@
 '''
 
     $ export ANDROID_NDK={Your_ndk_dir_path}
+    
 '''
 
 > 减少编译库所在内存空间（可选）
@@ -486,18 +491,20 @@
 
 '''
 
-> 位图输入(需要引入opencv相关库)
+> 位图输入
 
 '''
 
     //jni部分关键代码
-    cv::Mat matBitmap;
-    bool ret = BitmapToMatrix(env, digitImgBitmap, matBitmap);
-    if(!ret){
-        return NULL;
+    AndroidBitmapInfo info;
+    AndroidBitmap_getInfo(env, obj_bitmap, &info);
+    int width = info.width;
+    int height = info.height;
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        return ret;
     }
     //转换图片数据格式
-    ncnn::Mat ncnn_img = ncnn::Mat::from_pixels_resize(matBitmap.data, ncnn::Mat::PIXEL_BGRA2GRAY, w, h, 28, 28);
+    ncnn::Mat ncnn_img = ncnn::Mat::from_android_bitmap_resize(env, obj_bitmap, ncnn::Mat::PIXEL_BGRA2GRAY, 28, 28);
     //输入数据归一化
     const float norm_vals[1] = {1/255.f};
     ncnn_img.substract_mean_normalize(0, norm_vals);
@@ -575,15 +582,22 @@
     [powersave]：资源使用：0=all cores, 1=little cores only, 2=big cores only
     [gpu device]：运行设备, -1=cpu-only, 0=gpu0, 1=gpu1 ...
     [cooling down]：是否进行热身, 0=disable, 1=enable
+    
 '''
 
-##### 3.2.4 部门常见机型测试结果统计（示例）
-
-> A920 7.1 MSM8909
+##### 3.2.4 常见低性能机型测试结果统计（示例）
 
 '''
 
-    A920:/data/local/tmp # ./benchncnn 10 4 0 -1 1                                                                                                                                                             
+    $ cd /data/local/tmp 
+    $ ./benchncnn 10 4 0 -1 1
+
+'''
+
+> Android 7.1 MSM8909
+
+'''      
+
     loop_count = 10
     num_threads = 4
     powersave = 0
@@ -600,14 +614,13 @@
            LeNet_p27_sim time =    2.83
            LeNet_p27_sim time =    2.59
            LeNet_p27_sim  min =    1.87  max =    2.83  avg =    2.26
+           
+'''
+
+> Android 7.1 MSM8917
 
 '''
 
-> A930 7.1 MSM8917
-
-'''
-
-    A930:/data/local/tmp # ./benchncnn 10 4 0 -1 1
     loop_count = 10
     num_threads = 4
     powersave = 0
@@ -624,14 +637,13 @@
            LeNet_p27_sim time =    0.81
            LeNet_p27_sim time =    0.80
            LeNet_p27_sim  min =    0.45  max =    0.92  avg =    0.78
+           
+'''
+
+> Android 5.1 MSM8909
 
 '''
 
-> A920 5.1 MSM8909
-
-'''
-
-    root@A920:/data/local/tmp # ./benchncnn 10 4 0 -1 1
     loop_count = 10
     num_threads = 4
     powersave = 0
@@ -648,5 +660,5 @@
            LeNet_p27_sim time =    1.08
            LeNet_p27_sim time =    1.22
            LeNet_p27_sim  min =    1.08  max =    2.55  avg =    1.44
-
+           
 '''
